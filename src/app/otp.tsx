@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-    SafeAreaView,
     StatusBar,
     StyleSheet,
     Text,
@@ -9,6 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OtpScreen() {
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -85,6 +85,7 @@ export default function OtpScreen() {
           ]}
           activeOpacity={0.8}
           disabled={!isOtpComplete}
+          onPress={() => router.push("/driver-dashboard")}
         >
           <Text style={styles.buttonText}>Verify & Continue ✓</Text>
         </TouchableOpacity>
