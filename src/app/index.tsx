@@ -1,98 +1,114 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from "react";
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+export default function Index() {
+  const [role, setRole] = useState(null);
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Smart School Van</Text>
+        <Text style={styles.subtitle}>Safety & Transport System</Text>
+      </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+      <View style={styles.cardContainer}>
+        <Text style={styles.selectText}>Select Your Role to Continue</Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        {/* Parent Option */}
+        <TouchableOpacity
+          style={[styles.roleCard, { backgroundColor: "#F39C12" }]}
+          onPress={() => setRole("Parent")}
+        >
+          <Text style={styles.roleTitle}>👨‍👩‍👧 Parent</Text>
+          <Text style={styles.roleDesc}>
+            Track van live & monitor student safety
+          </Text>
+        </TouchableOpacity>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        {/* Driver Option */}
+        <TouchableOpacity
+          style={[styles.roleCard, { backgroundColor: "#2C3E50" }]}
+          onPress={() => setRole("Driver")}
+        >
+          <Text style={styles.roleTitle}>🚍 Driver</Text>
+          <Text style={styles.roleDesc}>Start route & manage attendance</Text>
+        </TouchableOpacity>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        {/* Selected Role Display */}
+        {role && (
+          <View style={styles.selectedBox}>
+            <Text style={styles.selectedText}>Selected Role: {role}</Text>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 20,
+    justifyContent: "center",
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 40,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#2C3E50",
   },
-  code: {
-    textTransform: 'uppercase',
+  subtitle: {
+    fontSize: 16,
+    color: "#7F8C8D",
+    marginTop: 5,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  cardContainer: {
+    width: "100%",
+  },
+  selectText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#34495E",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  roleCard: {
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 3,
+  },
+  roleTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  roleDesc: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    marginTop: 5,
+    opacity: 0.9,
+  },
+  selectedBox: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#E8F8F5",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  selectedText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#27AE60",
   },
 });
