@@ -1,51 +1,64 @@
-import { useState } from "react";
 import {
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-export default function Index() {
-  const [role, setRole] = useState(null);
-
+export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>Smart School Van</Text>
-        <Text style={styles.subtitle}>Safety & Transport System</Text>
+      <StatusBar barStyle="dark-content" backgroundColor="#F4A261" />
+
+      {/* Top Yellow Card */}
+      <View style={styles.topCard}>
+        {/* App Logo & Title Row */}
+        <View style={styles.headerRow}>
+          <View style={styles.logoIcon}>
+            <Text style={{ fontSize: 24 }}>🚌</Text>
+          </View>
+          <View>
+            <Text style={styles.appName}>SafeRide</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>SCHOOL VAN SYSTEM</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Van Graphic Placeholder */}
+        <View style={styles.illustrationContainer}>
+          <View style={styles.greenDot} />
+          <View style={styles.vanGraphic}>
+            <View style={styles.vanWindow} />
+          </View>
+        </View>
+
+        {/* Main Heading */}
+        <Text style={styles.headingText}>
+          Your kids,{"\n"}
+          <Text style={styles.boldHeading}>tracked{"\n"}</Text>
+          <Text style={styles.italicHeading}>every stop.</Text>
+        </Text>
       </View>
 
-      <View style={styles.cardContainer}>
-        <Text style={styles.selectText}>Select Your Role to Continue</Text>
-
-        {/* Parent Option */}
-        <TouchableOpacity
-          style={[styles.roleCard, { backgroundColor: "#F39C12" }]}
-          onPress={() => setRole("Parent")}
-        >
-          <Text style={styles.roleTitle}>👨‍👩‍👧 Parent</Text>
-          <Text style={styles.roleDesc}>
-            Track van live & monitor student safety
-          </Text>
+      {/* Bottom Action Area */}
+      <View style={styles.bottomContainer}>
+        {/* Parent Button */}
+        <TouchableOpacity style={styles.parentButton} activeOpacity={0.8}>
+          <Text style={styles.buttonText}>👨‍👩‍👧‍👦 I'm a Parent</Text>
         </TouchableOpacity>
 
-        {/* Driver Option */}
-        <TouchableOpacity
-          style={[styles.roleCard, { backgroundColor: "#2C3E50" }]}
-          onPress={() => setRole("Driver")}
-        >
-          <Text style={styles.roleTitle}>🚍 Driver</Text>
-          <Text style={styles.roleDesc}>Start route & manage attendance</Text>
+        {/* Driver Button */}
+        <TouchableOpacity style={styles.driverButton} activeOpacity={0.8}>
+          <Text style={styles.driverButtonText}>🚐 I'm a Driver</Text>
         </TouchableOpacity>
 
-        {/* Selected Role Display */}
-        {role && (
-          <View style={styles.selectedBox}>
-            <Text style={styles.selectedText}>Selected Role: {role}</Text>
-          </View>
-        )}
+        {/* Footer Text */}
+        <Text style={styles.footerText}>
+          School-verified • Encrypted • Trusted by 1,200+ families
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -54,61 +67,135 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
-    paddingHorizontal: 20,
+    backgroundColor: "#FAF7F2",
+  },
+  topCard: {
+    backgroundColor: "#F39C12",
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+    paddingHorizontal: 28,
+    paddingTop: 40,
+    paddingBottom: 40,
+    position: "relative",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  logoIcon: {
+    width: 52,
+    height: 52,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     justifyContent: "center",
-  },
-  headerContainer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginRight: 14,
   },
-  title: {
-    fontSize: 28,
+  appName: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1A252C",
+  },
+  badge: {
+    backgroundColor: "rgba(0,0,0,0.12)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+    marginTop: 2,
+  },
+  badgeText: {
+    fontSize: 10,
     fontWeight: "bold",
-    color: "#2C3E50",
+    color: "#1A252C",
+    letterSpacing: 0.8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#7F8C8D",
-    marginTop: 5,
+  illustrationContainer: {
+    marginVertical: 15,
+    position: "relative",
   },
-  cardContainer: {
-    width: "100%",
+  greenDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#2ECC71",
+    position: "absolute",
+    top: -8,
+    left: 70,
+    zIndex: 2,
   },
-  selectText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#34495E",
-    marginBottom: 20,
+  vanGraphic: {
+    width: 90,
+    height: 48,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingRight: 10,
+  },
+  vanWindow: {
+    width: 20,
+    height: 24,
+    backgroundColor: "#F39C12",
+    borderRadius: 6,
+    opacity: 0.4,
+  },
+  headingText: {
+    fontSize: 34,
+    color: "#1B2A38",
+    lineHeight: 40,
+    marginTop: 15,
+  },
+  boldHeading: {
+    fontWeight: "900",
+  },
+  italicHeading: {
+    fontStyle: "italic",
+    fontWeight: "400",
+    opacity: 0.85,
+  },
+  bottomContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
+    justifyContent: "flex-end",
+    paddingBottom: 30,
+  },
+  parentButton: {
+    backgroundColor: "#F39C12",
+    paddingVertical: 18,
+    borderRadius: 20,
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#F39C12",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  buttonText: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#1A252C",
+  },
+  driverButton: {
+    backgroundColor: "#FAF7F2",
+    borderWidth: 2,
+    borderColor: "#1A252C",
+    paddingVertical: 18,
+    borderRadius: 20,
+    alignItems: "center",
+    marginBottom: 25,
+  },
+  driverButtonText: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#1A252C",
+  },
+  footerText: {
+    fontSize: 12,
+    color: "#8E9A9D",
     textAlign: "center",
-  },
-  roleCard: {
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 3,
-  },
-  roleTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  roleDesc: {
-    fontSize: 14,
-    color: "#FFFFFF",
-    marginTop: 5,
-    opacity: 0.9,
-  },
-  selectedBox: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#E8F8F5",
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  selectedText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#27AE60",
+    fontWeight: "500",
   },
 });
