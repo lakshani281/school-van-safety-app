@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
     StatusBar,
@@ -77,18 +77,18 @@ export default function OtpScreen() {
           ))}
         </View>
 
-        {/* Verify & Continue Button */}
-        <TouchableOpacity
-          style={[
-            styles.verifyButton,
-            { backgroundColor: isOtpComplete ? "#F39C12" : "#F7D08A" },
-          ]}
-          activeOpacity={0.8}
-          disabled={!isOtpComplete}
-          onPress={() => router.push("/driver-dashboard")}
-        >
-          <Text style={styles.buttonText}>Verify & Continue ✓</Text>
-        </TouchableOpacity>
+        {/* Verify & Continue Button wrapped with Link */}
+        <Link href="/driver-dashboard" asChild disabled={!isOtpComplete}>
+          <TouchableOpacity
+            style={[
+              styles.verifyButton,
+              { backgroundColor: isOtpComplete ? "#F39C12" : "#F7D08A" },
+            ]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>Verify & Continue ✓</Text>
+          </TouchableOpacity>
+        </Link>
 
         {/* Change Number Link */}
         <TouchableOpacity
