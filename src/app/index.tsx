@@ -4,12 +4,17 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+
+  const handleDriverLogin = () => {
+    // TypeScript router path constraint solution
+    router.push("/login" as any);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,7 +44,7 @@ export default function WelcomeScreen() {
         <TouchableOpacity
           style={styles.driverButton}
           activeOpacity={0.8}
-          onPress={() => router.push("/login")}
+          onPress={handleDriverLogin}
         >
           <Text style={styles.driverButtonText}>🚐 I'm a Driver</Text>
         </TouchableOpacity>
