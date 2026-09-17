@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import {
     SafeAreaView,
     ScrollView,
@@ -9,6 +10,8 @@ import {
 } from "react-native";
 
 export default function DriverDashboard() {
+  const router = useRouter();
+
   const students = [
     {
       id: "1",
@@ -48,6 +51,10 @@ export default function DriverDashboard() {
     },
   ];
 
+  const handleProfilePress = () => {
+    router.push("/driver-profile" as any);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1A252C" />
@@ -56,37 +63,39 @@ export default function DriverDashboard() {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Dark Header Card */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerTopRow}>
-            <View>
-              <Text style={styles.welcomeText}>Welcome back 👋</Text>
-              <Text style={styles.driverName}>Budi Santoso</Text>
-            </View>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>BS</Text>
-            </View>
-          </View>
-
-          {/* Van Info & Weather Row */}
-          <View style={styles.infoRow}>
-            <View style={styles.infoBox}>
-              <Text style={{ fontSize: 20, marginRight: 8 }}>🚐</Text>
+        {/* Top Dark Header Card (Clickable to open Driver Profile) */}
+        <TouchableOpacity activeOpacity={0.9} onPress={handleProfilePress}>
+          <View style={styles.headerCard}>
+            <View style={styles.headerTopRow}>
               <View>
-                <Text style={styles.infoTitle}>GV - 204</Text>
-                <Text style={styles.infoSubText}>Toyota HiAce</Text>
+                <Text style={styles.welcomeText}>Welcome back 👋</Text>
+                <Text style={styles.driverName}>Budi Santoso</Text>
+              </View>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>BS</Text>
               </View>
             </View>
 
-            <View style={styles.infoBox}>
-              <Text style={{ fontSize: 20, marginRight: 8 }}>⛅</Text>
-              <View>
-                <Text style={styles.infoTitle}>28°C</Text>
-                <Text style={styles.infoSubText}>Partly cloudy</Text>
+            {/* Van Info & Weather Row */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoBox}>
+                <Text style={{ fontSize: 20, marginRight: 8 }}>🚐</Text>
+                <View>
+                  <Text style={styles.infoTitle}>GV - 204</Text>
+                  <Text style={styles.infoSubText}>Toyota HiAce</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={{ fontSize: 20, marginRight: 8 }}>⛅</Text>
+                <View>
+                  <Text style={styles.infoTitle}>28°C</Text>
+                  <Text style={styles.infoSubText}>Partly cloudy</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Morning Route A Summary Card */}
         <View style={styles.routeCard}>
