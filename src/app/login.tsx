@@ -1,4 +1,4 @@
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
     StatusBar,
@@ -13,6 +13,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const router = useRouter();
+
+  const handleSendOtp = () => {
+    if (phoneNumber.length >= 9) {
+      router.push("/otp" as any);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -53,20 +59,19 @@ export default function LoginScreen() {
         </Text>
 
         {/* Send OTP Button */}
-        <Link href="/otp" asChild disabled={phoneNumber.length < 9}>
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor:
-                  phoneNumber.length >= 9 ? "#F39C12" : "#F7D08A",
-              },
-            ]}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonText}>Send OTP →</Text>
-          </TouchableOpacity>
-        </Link>
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            {
+              backgroundColor: phoneNumber.length >= 9 ? "#F39C12" : "#F7D08A",
+            },
+          ]}
+          activeOpacity={0.8}
+          disabled={phoneNumber.length < 9}
+          onPress={handleSendOtp}
+        >
+          <Text style={styles.buttonText}>Send OTP →</Text>
+        </TouchableOpacity>
 
         {/* Back Link */}
         <TouchableOpacity
