@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import {
     StatusBar,
@@ -53,19 +53,20 @@ export default function LoginScreen() {
         </Text>
 
         {/* Send OTP Button */}
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            {
-              backgroundColor: phoneNumber.length >= 9 ? "#F39C12" : "#F7D08A",
-            },
-          ]}
-          activeOpacity={0.8}
-          disabled={phoneNumber.length < 9}
-          onPress={() => router.push("/otp")}
-        >
-          <Text style={styles.buttonText}>Send OTP →</Text>
-        </TouchableOpacity>
+        <Link href="/otp" asChild disabled={phoneNumber.length < 9}>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor:
+                  phoneNumber.length >= 9 ? "#F39C12" : "#F7D08A",
+              },
+            ]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>Send OTP →</Text>
+          </TouchableOpacity>
+        </Link>
 
         {/* Back Link */}
         <TouchableOpacity
