@@ -37,7 +37,7 @@ export default function OtpScreen() {
 
   const handleVerify = () => {
     if (isOtpComplete) {
-      router.push("/driver-dashboard" as any);
+      router.push("/driver-setup" as any);
     }
   };
 
