@@ -7,6 +7,7 @@ export default function Layout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="otp" />
       <Stack.Screen name="driver-setup" />
+      <Stack.Screen name="vehicle-setup" />
       <Stack.Screen name="driver-dashboard" />
       <Stack.Screen name="driver-profile" />
     </Stack>
