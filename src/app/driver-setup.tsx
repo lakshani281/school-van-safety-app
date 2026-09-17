@@ -21,7 +21,7 @@ export default function DriverSetupScreen() {
 
   const handleContinue = () => {
     if (isFormValid) {
-      router.push("/driver-dashboard" as any);
+      router.push("/vehicle-setup" as any);
     }
   };
 
