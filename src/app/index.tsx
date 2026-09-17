@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import {
   StatusBar,
   StyleSheet,
@@ -10,11 +10,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
-
-  const handleDriverLogin = () => {
-    // TypeScript router path constraint solution
-    router.push("/login" as any);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,13 +36,12 @@ export default function WelcomeScreen() {
 
       {/* Bottom Action Buttons */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={styles.driverButton}
-          activeOpacity={0.8}
-          onPress={handleDriverLogin}
-        >
-          <Text style={styles.driverButtonText}>🚐 I'm a Driver</Text>
-        </TouchableOpacity>
+        {/* Direct Link Component to ensure Expo Router navigation */}
+        <Link href="/login" asChild>
+          <TouchableOpacity style={styles.driverButton} activeOpacity={0.8}>
+            <Text style={styles.driverButtonText}>🚐 I'm a Driver</Text>
+          </TouchableOpacity>
+        </Link>
 
         <TouchableOpacity style={styles.parentButton} activeOpacity={0.8}>
           <Text style={styles.parentButtonText}>👨‍👩‍👧 I'm a Parent</Text>
