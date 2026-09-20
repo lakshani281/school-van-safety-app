@@ -10,6 +10,7 @@ export default function Layout() {
       <Stack.Screen name="vehicle-setup" />
       <Stack.Screen name="driver-dashboard" />
       <Stack.Screen name="driver-profile" />
+      <Stack.Screen name="student-checklist" />
     </Stack>
   );
 }
