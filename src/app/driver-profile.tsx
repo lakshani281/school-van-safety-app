@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,11 +22,12 @@ export default function DriverProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Top Dark Card */}
+        {/* Top Dark Header Card */}
         <View style={styles.topHeaderCard}>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => router.back()}
+            activeOpacity={0.7}
           >
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
@@ -132,7 +133,7 @@ export default function DriverProfileScreen() {
               </View>
             </View>
 
-            {/* Custom Interactive Slider UI */}
+            {/* Interactive Slider Track */}
             <View style={styles.sliderTrackContainer}>
               <View style={styles.sliderTrack}>
                 <View
@@ -181,7 +182,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 30,
-    position: "relative",
   },
   closeButton: {
     alignSelf: "flex-end",
