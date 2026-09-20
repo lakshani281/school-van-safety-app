@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
 import {
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function DriverDashboard() {
@@ -53,6 +53,10 @@ export default function DriverDashboard() {
 
   const handleProfilePress = () => {
     router.push("/driver-profile" as any);
+  };
+
+  const handleRosterPress = () => {
+    router.push("/student-checklist" as any);
   };
 
   return (
@@ -133,7 +137,7 @@ export default function DriverDashboard() {
         {/* Today's Students List Header */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Students</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleRosterPress}>
             <Text style={styles.seeAllText}>See all →</Text>
           </TouchableOpacity>
         </View>
@@ -196,7 +200,7 @@ export default function DriverDashboard() {
           <Text style={styles.tabText}>Drive</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={handleRosterPress}>
           <Text style={{ fontSize: 20 }}>📋</Text>
           <Text style={styles.tabText}>Roster</Text>
         </TouchableOpacity>
