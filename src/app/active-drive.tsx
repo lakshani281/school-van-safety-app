@@ -13,8 +13,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ActiveDriveScreen() {
   const router = useRouter();
-  const [currentSpeed] = useState(46);
+  // Speed Limit is set to 50 km/h
   const speedLimit = 50;
+  // Default speed set to 52 km/h to demonstrate the Over Speed Warning UI
+  const [currentSpeed, setCurrentSpeed] = useState(52);
+
+  const isOverSpeed = currentSpeed > speedLimit;
 
   const handleSOSPress = () => {
     Alert.alert(
@@ -35,51 +39,89 @@ export default function ActiveDriveScreen() {
     ]);
   };
 
+  // Helper function to toggle speed for UI testing (46 km/h normal vs 52 km/h overspeed)
+  const toggleSpeedTest = () => {
+    setCurrentSpeed((prev) => (prev > speedLimit ? 46 : 52));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1A252C" />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={isOverSpeed ? "#FF3B30" : "#1A252C"}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Top Dark Speed & Emergency Header */}
-        <View style={styles.topHeaderCard}>
-          <View style={styles.speedRow}>
-            <View style={styles.speedDetails}>
-              <Text style={styles.speedHeaderLabel}>CURRENT SPEED</Text>
-              <View style={styles.speedValueRow}>
-                <Text style={styles.speedNumber}>{currentSpeed}</Text>
-                <Text style={styles.speedUnit}> km/h</Text>
+        {/* Dynamic Speed & Emergency Header (Changes to Red on Over-Speed) */}
+        <TouchableOpacity activeOpacity={0.95} onPress={toggleSpeedTest}>
+          <View
+            style={[
+              styles.topHeaderCard,
+              isOverSpeed && styles.overSpeedHeaderCard,
+            ]}
+          >
+            <View style={styles.speedRow}>
+              <View style={styles.speedDetails}>
+                {isOverSpeed ? (
+                  <Text style={styles.overSpeedHeaderLabel}>
+                    ⚠️ OVER SPEED LIMIT
+                  </Text>
+                ) : (
+                  <Text style={styles.speedHeaderLabel}>CURRENT SPEED</Text>
+                )}
+
+                <View style={styles.speedValueRow}>
+                  <Text
+                    style={[
+                      styles.speedNumber,
+                      isOverSpeed && styles.overSpeedNumber,
+                    ]}
+                  >
+                    {currentSpeed}
+                  </Text>
+                  <Text style={styles.speedUnit}> km/h</Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.speedLimitText,
+                    isOverSpeed && styles.overSpeedLimitText,
+                  ]}
+                >
+                  Limit: {speedLimit} km/h
+                </Text>
               </View>
-              <Text style={styles.speedLimitText}>
-                Limit: {speedLimit} km/h
-              </Text>
+
+              {/* Glowing Red Emergency SOS Button */}
+              <TouchableOpacity
+                style={styles.sosButtonOuter}
+                activeOpacity={0.8}
+                onPress={handleSOSPress}
+              >
+                <View style={styles.sosButtonInner}>
+                  <Text style={styles.sosTitle}>SOS</Text>
+                  <Text style={styles.sosSubTitle}>EMERGENCY</Text>
+                </View>
+              </TouchableOpacity>
             </View>
 
-            {/* Glowing Red Emergency SOS Button */}
-            <TouchableOpacity
-              style={styles.sosButtonOuter}
-              activeOpacity={0.8}
-              onPress={handleSOSPress}
-            >
-              <View style={styles.sosButtonInner}>
-                <Text style={styles.sosTitle}>SOS</Text>
-                <Text style={styles.sosSubTitle}>EMERGENCY</Text>
-              </View>
-            </TouchableOpacity>
+            {/* Speed Indicator Progress Line */}
+            <View style={styles.speedProgressTrack}>
+              <View
+                style={[
+                  styles.speedProgressFill,
+                  {
+                    width: `${Math.min((currentSpeed / speedLimit) * 100, 100)}%`,
+                    backgroundColor: isOverSpeed ? "#FFFFFF" : "#F39C12",
+                  },
+                ]}
+              />
+            </View>
           </View>
-
-          {/* Speed Indicator Progress Line */}
-          <View style={styles.speedProgressTrack}>
-            <View
-              style={[
-                styles.speedProgressFill,
-                { width: `${(currentSpeed / speedLimit) * 100}%` },
-              ]}
-            />
-          </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Route Tracking Map Graphic */}
         <View style={styles.bodyContent}>
@@ -227,6 +269,9 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 28,
   },
+  overSpeedHeaderCard: {
+    backgroundColor: "#FF3B30",
+  },
   speedRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -241,6 +286,12 @@ const styles = StyleSheet.create({
     color: "#7F8C8D",
     letterSpacing: 1,
   },
+  overSpeedHeaderLabel: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: 1,
+  },
   speedValueRow: {
     flexDirection: "row",
     alignItems: "baseline",
@@ -250,6 +301,9 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: "900",
     color: "#F39C12",
+  },
+  overSpeedNumber: {
+    color: "#FFFFFF",
   },
   speedUnit: {
     fontSize: 18,
@@ -261,13 +315,16 @@ const styles = StyleSheet.create({
     color: "#7F8C8D",
     fontWeight: "600",
   },
+  overSpeedLimitText: {
+    color: "#FFE5E5",
+  },
   sosButtonOuter: {
     width: 84,
     height: 84,
     borderRadius: 24,
-    backgroundColor: "rgba(231, 76, 60, 0.15)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderWidth: 1,
-    borderColor: "rgba(231, 76, 60, 0.3)",
+    borderColor: "rgba(255, 255, 255, 0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -275,35 +332,34 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 20,
-    backgroundColor: "#FF3B30",
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
-    shadowColor: "#FF3B30",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   sosTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: "#FF3B30",
   },
   sosSubTitle: {
     fontSize: 8,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "#FF3B30",
   },
   speedProgressTrack: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     marginTop: 20,
     overflow: "hidden",
   },
   speedProgressFill: {
     height: "100%",
-    backgroundColor: "#F39C12",
   },
   bodyContent: {
     paddingHorizontal: 20,
@@ -507,7 +563,7 @@ const styles = StyleSheet.create({
   },
   stepLabelsRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justify.space-around,
     marginTop: 4,
   },
   stepLabel: {
