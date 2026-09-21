@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   },
   stepLabelsRow: {
     flexDirection: "row",
-    justify.space-around,
+    justifyContent: "space-around",
     marginTop: 4,
   },
   stepLabel: {
