@@ -244,7 +244,7 @@ export default function StudentChecklistScreen() {
       <View style={styles.bottomTabBar}>
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => router.push("/driver-dashboard")}
+          onPress={() => router.push("/driver-dashboard" as any)}
         >
           <Text style={styles.tabIcon}>🏠</Text>
           <Text style={styles.tabLabel}>Home</Text>
@@ -252,7 +252,7 @@ export default function StudentChecklistScreen() {
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => router.push("/driver-dashboard")}
+          onPress={() => router.push("/active-drive" as any)}
         >
           <Text style={styles.tabIcon}>🗺️</Text>
           <Text style={styles.tabLabel}>Drive</Text>
