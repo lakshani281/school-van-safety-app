@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import React from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -57,6 +58,14 @@ export default function DriverDashboard() {
 
   const handleRosterPress = () => {
     router.push("/student-checklist" as any);
+  };
+
+  const handleDrivePress = () => {
+    router.push("/active-drive" as any);
+  };
+
+  const handleFeesPress = () => {
+    router.push("/fees" as any);
   };
 
   return (
@@ -182,7 +191,11 @@ export default function DriverDashboard() {
         </View>
 
         {/* Start Morning Trip Button */}
-        <TouchableOpacity style={styles.startTripBtn} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.startTripBtn}
+          activeOpacity={0.8}
+          onPress={handleDrivePress}
+        >
           <Text style={{ fontSize: 18, marginRight: 8 }}>🚐</Text>
           <Text style={styles.startTripText}>Start Morning Trip</Text>
         </TouchableOpacity>
@@ -195,7 +208,7 @@ export default function DriverDashboard() {
           <Text style={styles.activeTabText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={handleDrivePress}>
           <Text style={{ fontSize: 20 }}>🗺️</Text>
           <Text style={styles.tabText}>Drive</Text>
         </TouchableOpacity>
@@ -205,7 +218,7 @@ export default function DriverDashboard() {
           <Text style={styles.tabText}>Roster</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={handleFeesPress}>
           <Text style={{ fontSize: 20 }}>💰</Text>
           <Text style={styles.tabText}>Fees</Text>
         </TouchableOpacity>
