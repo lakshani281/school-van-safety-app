@@ -265,7 +265,10 @@ export default function StudentChecklistScreen() {
           <Text style={[styles.tabLabel, styles.activeTabLabel]}>Roster</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => router.push("/fees" as any)}
+        >
           <Text style={styles.tabIcon}>💰</Text>
           <Text style={styles.tabLabel}>Fees</Text>
         </TouchableOpacity>
