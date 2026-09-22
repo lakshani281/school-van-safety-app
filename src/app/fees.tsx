@@ -15,10 +15,12 @@ interface StudentFee {
   name: string;
   grade: string;
   parent: string;
+  parentPhone: string;
   amount: string;
   status: "paid" | "unpaid";
   paymentMethod?: string;
   paidDate?: string;
+  note?: string;
   avatarBg: string;
   avatarColor: string;
 }
@@ -29,10 +31,12 @@ const INITIAL_FEES: StudentFee[] = [
     name: "Aisha Rahman",
     grade: "Gr 4",
     parent: "Mrs. Rahman",
+    parentPhone: "077-123-4567",
     amount: "LKR 4,500",
     status: "paid",
     paymentMethod: "Cash",
     paidDate: "02 Sep 2026",
+    note: "Paid via cash to driver",
     avatarBg: "#FFF3D6",
     avatarColor: "#F39C12",
   },
@@ -41,10 +45,12 @@ const INITIAL_FEES: StudentFee[] = [
     name: "Omar Hassan",
     grade: "Gr 6",
     parent: "Mr. Hassan",
+    parentPhone: "071-987-6543",
     amount: "LKR 5,000",
     status: "paid",
     paymentMethod: "Bank Transfer",
     paidDate: "01 Sep 2026",
+    note: "—",
     avatarBg: "#E8F0FE",
     avatarColor: "#3B82F6",
   },
@@ -53,6 +59,7 @@ const INITIAL_FEES: StudentFee[] = [
     name: "Priya Mehta",
     grade: "Gr 3",
     parent: "Mrs. Mehta",
+    parentPhone: "075-456-7890",
     amount: "LKR 4,500",
     status: "unpaid",
     avatarBg: "#F3E8FF",
@@ -63,6 +70,7 @@ const INITIAL_FEES: StudentFee[] = [
     name: "Lucas Silva",
     grade: "Gr 5",
     parent: "Mr. Silva",
+    parentPhone: "072-333-4444",
     amount: "LKR 6,000",
     status: "unpaid",
     avatarBg: "#E6F9F0",
@@ -73,10 +81,12 @@ const INITIAL_FEES: StudentFee[] = [
     name: "Zoe Kim",
     grade: "Gr 2",
     parent: "Mrs. Kim",
+    parentPhone: "078-999-0000",
     amount: "LKR 4,500",
     status: "paid",
     paymentMethod: "Cash",
     paidDate: "03 Sep 2026",
+    note: "—",
     avatarBg: "#FEE2E2",
     avatarColor: "#EF4444",
   },
@@ -86,6 +96,8 @@ export default function FeesScreen() {
   const router = useRouter();
   const [feeList] = useState<StudentFee[]>(INITIAL_FEES);
   const [filter, setFilter] = useState<"all" | "paid" | "unpaid">("all");
+  // Expanded Student Card ID tracking state
+  const [expandedId, setExpandedId] = useState<string | null>("2"); // Default expanded: Omar Hassan
 
   const paidCount = feeList.filter((item) => item.status === "paid").length;
   const unpaidCount = feeList.filter((item) => item.status === "unpaid").length;
@@ -97,6 +109,10 @@ export default function FeesScreen() {
     if (filter === "unpaid") return item.status === "unpaid";
     return true;
   });
+
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -141,10 +157,7 @@ export default function FeesScreen() {
           </View>
           <View style={styles.progressTrack}>
             <View
-              style={[
-                styles.progressFill,
-                { width: `${percentagePaid}%` },
-              ]}
+              style={[styles.progressFill, { width: `${percentagePaid}%` }]}
             />
           </View>
         </View>
@@ -210,6 +223,7 @@ export default function FeesScreen() {
         <View style={styles.feeListContainer}>
           {filteredFees.map((student) => {
             const isPaid = student.status === "paid";
+            const isExpanded = expandedId === student.id;
 
             return (
               <View
@@ -219,83 +233,146 @@ export default function FeesScreen() {
                   isPaid ? styles.paidCardBorder : styles.unpaidCardBorder,
                 ]}
               >
-                <View style={styles.feeCardContent}>
-                  {/* Left Avatar Icon with Check/Alert Badge */}
-                  <View style={styles.avatarWrapper}>
-                    <View
-                      style={[
-                        styles.avatarBox,
-                        {
-                          backgroundColor: student.avatarBg,
-                          borderColor: student.avatarColor,
-                        },
-                      ]}
-                    >
-                      <Text
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => toggleExpand(student.id)}
+                >
+                  <View style={styles.feeCardContent}>
+                    {/* Left Avatar Icon with Check/Alert Badge */}
+                    <View style={styles.avatarWrapper}>
+                      <View
                         style={[
-                          styles.avatarText,
-                          { color: student.avatarColor },
+                          styles.avatarBox,
+                          {
+                            backgroundColor: student.avatarBg,
+                            borderColor: student.avatarColor,
+                          },
                         ]}
                       >
-                        {student.name.charAt(0)}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.avatarText,
+                            { color: student.avatarColor },
+                          ]}
+                        >
+                          {student.name.charAt(0)}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.statusBadgeIcon,
+                          { backgroundColor: isPaid ? "#2ECC71" : "#EF4444" },
+                        ]}
+                      >
+                        <Text style={styles.statusBadgeIconText}>
+                          {isPaid ? "✓" : "!"}
+                        </Text>
+                      </View>
                     </View>
-                    <View
-                      style={[
-                        styles.statusBadgeIcon,
-                        { backgroundColor: isPaid ? "#2ECC71" : "#EF4444" },
-                      ]}
-                    >
-                      <Text style={styles.statusBadgeIconText}>
-                        {isPaid ? "✓" : "!"}
+
+                    {/* Middle Student Information */}
+                    <View style={styles.studentDetailsBox}>
+                      <Text style={styles.studentName}>{student.name}</Text>
+                      <Text style={styles.studentParentText}>
+                        {student.grade} • {student.parent}
                       </Text>
+                      {isPaid ? (
+                        <Text style={styles.paidMethodText}>
+                          {student.paymentMethod} • {student.paidDate}
+                        </Text>
+                      ) : null}
+                    </View>
+
+                    {/* Right Status Label and LKR Amount */}
+                    <View style={styles.feeRightBox}>
+                      <View
+                        style={[
+                          styles.paidStatusTag,
+                          isPaid ? styles.paidTagBg : styles.unpaidTagBg,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.paidStatusText,
+                            isPaid ? styles.paidTagText : styles.unpaidTagText,
+                          ]}
+                        >
+                          {isPaid ? "PAID" : "UNPAID"}
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.amountPill}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.amountText}>{student.amount}</Text>
+                        <Text style={{ fontSize: 10, marginLeft: 4 }}>✏️</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
+                </TouchableOpacity>
 
-                  {/* Middle Student Information */}
-                  <View style={styles.studentDetailsBox}>
-                    <Text style={styles.studentName}>{student.name}</Text>
-                    <Text style={styles.studentParentText}>
-                      {student.grade} • {student.parent}
-                    </Text>
+                {/* Expanded Details Section */}
+                {isExpanded && (
+                  <View style={styles.expandedContainer}>
                     {isPaid ? (
-                      <Text style={styles.paidMethodText}>
-                        {student.paymentMethod} • {student.paidDate}
-                      </Text>
-                    ) : null}
-                  </View>
+                      /* Paid Student Expanded Details Box */
+                      <View style={styles.paidDetailsCard}>
+                        <View style={styles.detailRow}>
+                          <View style={styles.detailCol}>
+                            <Text style={styles.detailLabel}>Method</Text>
+                            <Text style={styles.detailValue}>
+                              {student.paymentMethod}
+                            </Text>
+                          </View>
+                          <View style={styles.detailCol}>
+                            <Text style={styles.detailLabel}>Date</Text>
+                            <Text style={styles.detailValue}>
+                              {student.paidDate}
+                            </Text>
+                          </View>
+                        </View>
 
-                  {/* Right Status Label and LKR Amount */}
-                  <View style={styles.feeRightBox}>
-                    <View
-                      style={[
-                        styles.paidStatusTag,
-                        isPaid
-                          ? styles.paidTagBg
-                          : styles.unpaidTagBg,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.paidStatusText,
-                          isPaid
-                            ? styles.paidTagText
-                            : styles.unpaidTagText,
-                        ]}
-                      >
-                        {isPaid ? "PAID" : "UNPAID"}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.amountPill}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.amountText}>{student.amount}</Text>
-                      <Text style={{ fontSize: 12, marginLeft: 4 }}>✏️</Text>
-                    </TouchableOpacity>
+                        <View style={[styles.detailRow, { marginTop: 12 }]}>
+                          <View style={styles.detailCol}>
+                            <Text style={styles.detailLabel}>Amount</Text>
+                            <Text style={styles.detailValueBold}>
+                              {student.amount}
+                            </Text>
+                          </View>
+                          <View style={styles.detailCol}>
+                            <Text style={styles.detailLabel}>Note</Text>
+                            <Text style={styles.detailValue}>
+                              {student.note || "—"}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
+                      /* Unpaid Student Expanded Details Box */
+                      <View style={styles.unpaidDetailsCard}>
+                        <View style={styles.unpaidNoticeBox}>
+                          <Text style={{ fontSize: 20, marginRight: 8 }}>⚠️</Text>
+                          <View>
+                            <Text style={styles.unpaidTitle}>
+                              Fee Not Paid — {student.amount}
+                            </Text>
+                            <Text style={styles.unpaidSubText}>
+                              {student.parent} • {student.parentPhone}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={styles.unpaidInstructionText}>
+                          Tap the{" "}
+                          <Text style={{ fontWeight: "800", color: "#1A252C" }}>
+                            {student.amount} ✏️
+                          </Text>{" "}
+                          badge above to change this student's fee
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                </View>
+                )}
               </View>
             );
           })}
@@ -600,6 +677,71 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#7F8C8D",
     fontFamily: "monospace",
+  },
+  expandedContainer: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+  },
+  paidDetailsCard: {
+    backgroundColor: "#F8FAF8",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  detailCol: {
+    flex: 0.48,
+  },
+  detailLabel: {
+    fontSize: 11,
+    color: "#7F8C8D",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#1A252C",
+  },
+  detailValueBold: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#1A252C",
+  },
+  unpaidDetailsCard: {
+    backgroundColor: "#FFF8ED",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#FFE0B2",
+  },
+  unpaidNoticeBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  unpaidTitle: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#D35400",
+  },
+  unpaidSubText: {
+    fontSize: 11,
+    color: "#E67E22",
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  unpaidInstructionText: {
+    fontSize: 11,
+    color: "#7F8C8D",
+    textAlign: "center",
+    marginTop: 4,
   },
   bottomTabBar: {
     position: "absolute",
