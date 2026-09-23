@@ -36,31 +36,31 @@ export default function ParentDashboardScreen() {
               <View style={styles.bellBadgeDot} />
             </TouchableOpacity>
 
-            <View style={styles.avatarCircle}>
+            <TouchableOpacity
+              style={styles.avatarCircle}
+              activeOpacity={0.8}
+              onPress={() => router.push("/parent-profile-view" as any)}
+            >
               <Text style={styles.avatarText}>FR</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* Live Tracking Map Card */}
         <View style={styles.mapCardContainer}>
           <View style={styles.mapGraphicCard}>
-            {/* Grid Overlay Lines */}
             <View style={styles.gridLineVertical} />
             <View style={styles.gridLineHorizontal} />
 
-            {/* Live Indicator Badge */}
             <View style={styles.liveBadge}>
               <View style={styles.liveGreenDot} />
               <Text style={styles.liveBadgeText}>LIVE</Text>
             </View>
 
-            {/* Speed Badge */}
             <View style={styles.speedBadge}>
               <Text style={styles.speedBadgeText}>42 km/h</Text>
             </View>
 
-            {/* Van Route Path Illustration */}
             <View style={styles.routePathContainer}>
               <Text style={styles.dashedRoutePath}>〰️〰️〰️〰️〰️</Text>
               <View style={styles.startLocationPin}>
@@ -72,7 +72,6 @@ export default function ParentDashboardScreen() {
             </View>
           </View>
 
-          {/* ETA Info Banner inside Map Card */}
           <View style={styles.etaInfoCard}>
             <View style={styles.etaBadge}>
               <Text style={styles.etaNumber}>2</Text>
@@ -92,7 +91,6 @@ export default function ParentDashboardScreen() {
         {/* My Children Section */}
         <Text style={styles.sectionTitle}>My Children</Text>
 
-        {/* Child 1: Aisha Rahman */}
         <View style={styles.childCard}>
           <View style={[styles.childAvatarBox, { backgroundColor: "#FFF3D6", borderColor: "#F39C12" }]}>
             <Text style={[styles.childAvatarText, { color: "#F39C12" }]}>A</Text>
@@ -106,7 +104,6 @@ export default function ParentDashboardScreen() {
           </View>
         </View>
 
-        {/* Child 2: Tariq Rahman */}
         <View style={styles.childCard}>
           <View style={[styles.childAvatarBox, { backgroundColor: "#E8F0FE", borderColor: "#3B82F6" }]}>
             <Text style={[styles.childAvatarText, { color: "#3B82F6" }]}>T</Text>
@@ -120,7 +117,6 @@ export default function ParentDashboardScreen() {
           </View>
         </View>
 
-        {/* Mark Absent Toggle Option */}
         <View style={styles.absentToggleCard}>
           <View style={styles.absentToggleLeft}>
             <Text style={styles.absentToggleTitle}>🏚️ Mark Absent Today</Text>
@@ -137,7 +133,11 @@ export default function ParentDashboardScreen() {
         {/* Your Driver Section */}
         <Text style={styles.sectionTitle}>Your Driver</Text>
 
-        <View style={styles.driverCard}>
+        <TouchableOpacity
+          style={styles.driverCard}
+          activeOpacity={0.8}
+          onPress={() => router.push("/driver-profile-view" as any)}
+        >
           <View style={styles.driverAvatarCircle}>
             <Text style={{ fontSize: 26 }}>👮</Text>
           </View>
@@ -156,31 +156,35 @@ export default function ParentDashboardScreen() {
           </View>
 
           <View style={styles.driverActionsRow}>
-            <TouchableOpacity style={styles.callDriverBtn} activeOpacity={0.8}>
+            <View style={styles.callDriverBtn}>
               <Text style={{ fontSize: 18 }}>📞</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.messageDriverBtn} activeOpacity={0.8}>
+            </View>
+            <View style={styles.messageDriverBtn}>
               <Text style={{ fontSize: 16 }}>💬</Text>
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Parent Bottom Navigation Tab Bar */}
       <View style={styles.bottomTabBar}>
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} activeOpacity={0.8}>
           <View style={styles.activeTabHighlight}>
             <Text style={{ fontSize: 18 }}>📍</Text>
           </View>
           <Text style={[styles.tabLabel, styles.activeTabLabel]}>Track</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity
+          style={styles.tabItem}
+          activeOpacity={0.8}
+          onPress={() => router.push("/fees" as any)}
+        >
           <Text style={styles.tabIcon}>💳</Text>
           <Text style={styles.tabLabel}>Pay</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} activeOpacity={0.8}>
           <Text style={styles.tabIcon}>⚠️</Text>
           <Text style={styles.tabLabel}>Alerts</Text>
         </TouchableOpacity>
