@@ -36,16 +36,19 @@ export default function WelcomeScreen() {
 
       {/* Bottom Action Buttons */}
       <View style={styles.bottomContainer}>
-        {/* Direct Link Component to ensure Expo Router navigation */}
+        {/* Direct Link Component for Driver */}
         <Link href="/login" asChild>
           <TouchableOpacity style={styles.driverButton} activeOpacity={0.8}>
             <Text style={styles.driverButtonText}>🚐 I'm a Driver</Text>
           </TouchableOpacity>
         </Link>
 
-        <TouchableOpacity style={styles.parentButton} activeOpacity={0.8}>
-          <Text style={styles.parentButtonText}>👨‍👩‍👧 I'm a Parent</Text>
-        </TouchableOpacity>
+        {/* Direct Link Component for Parent */}
+        <Link href="/parent-login" asChild>
+          <TouchableOpacity style={styles.parentButton} activeOpacity={0.8}>
+            <Text style={styles.parentButtonText}>👨‍👩‍👧 I'm a Parent</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     </SafeAreaView>
   );
