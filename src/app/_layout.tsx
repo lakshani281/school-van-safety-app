@@ -14,6 +14,7 @@ export default function Layout() {
       <Stack.Screen name="active-drive" />
       <Stack.Screen name="fees" />
       <Stack.Screen name="parent-login" />
+      <Stack.Screen name="parent-otp" />
     </Stack>
   );
 }
