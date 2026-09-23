@@ -13,6 +13,7 @@ export default function Layout() {
       <Stack.Screen name="student-checklist" />
       <Stack.Screen name="active-drive" />
       <Stack.Screen name="fees" />
+      <Stack.Screen name="parent-login" />
     </Stack>
   );
 }
