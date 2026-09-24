@@ -79,7 +79,13 @@ export default function ParentProfileViewScreen() {
         {/* Linked Children Section */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Linked Children</Text>
-          <TouchableOpacity style={styles.addChildBtn} activeOpacity={0.8}>
+
+          {/* + Add Child Button - Click to navigate to /add-child */}
+          <TouchableOpacity
+            style={styles.addChildBtn}
+            activeOpacity={0.8}
+            onPress={() => router.push("/add-child" as any)}
+          >
             <Text style={styles.addChildBtnText}>+ Add Child</Text>
           </TouchableOpacity>
         </View>
