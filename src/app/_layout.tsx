@@ -23,6 +23,7 @@ export default function Layout() {
       <Stack.Screen name="parent-fees" />
       <Stack.Screen name="bank-transfer" />
       <Stack.Screen name="upload-slip" />
+      <Stack.Screen name="speed-alert" />
     </Stack>
   );
 }
