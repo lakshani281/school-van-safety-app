@@ -194,10 +194,11 @@ export default function ParentDashboardScreen() {
           <Text style={[styles.tabLabel, styles.activeTabLabel]}>Track</Text>
         </TouchableOpacity>
 
+        {/* Updated: Pay Button -> Navigates to /parent-fees */}
         <TouchableOpacity
           style={styles.tabItem}
           activeOpacity={0.8}
-          onPress={() => router.push("/fees" as any)}
+          onPress={() => router.push("/parent-fees" as any)}
         >
           <Text style={styles.tabIcon}>💳</Text>
           <Text style={styles.tabLabel}>Pay</Text>
