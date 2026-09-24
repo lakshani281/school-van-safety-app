@@ -20,6 +20,7 @@ export default function Layout() {
       <Stack.Screen name="parent-profile-view" />
       <Stack.Screen name="add-child" />
       <Stack.Screen name="parent-alerts" />
+      <Stack.Screen name="parent-fees" />
     </Stack>
   );
 }
