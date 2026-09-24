@@ -65,8 +65,12 @@ export default function ParentAlertsScreen() {
           {unreadCount > 0 && <View style={styles.greenUnreadDot} />}
         </View>
 
-        {/* Alert 2 (Speed Warning) */}
-        <View style={[styles.alertCard, styles.speedWarningCard]}>
+        {/* Alert 2 (Speed Warning -> Navigates to /speed-alert) */}
+        <TouchableOpacity
+          style={[styles.alertCard, styles.speedWarningCard]}
+          activeOpacity={0.8}
+          onPress={() => router.push("/speed-alert" as any)}
+        >
           <View style={[styles.iconBox, { backgroundColor: "#FFF3D6" }]}>
             <Text style={{ fontSize: 20 }}>⚡</Text>
           </View>
@@ -78,7 +82,7 @@ export default function ParentAlertsScreen() {
             <Text style={styles.timeText}>7:12 AM</Text>
           </View>
           {unreadCount > 0 && <View style={styles.redUnreadDot} />}
-        </View>
+        </TouchableOpacity>
 
         {/* Alert 3 */}
         <View style={styles.alertCard}>
@@ -151,7 +155,6 @@ export default function ParentAlertsScreen() {
           <Text style={styles.tabLabel}>Track</Text>
         </TouchableOpacity>
 
-        {/* Updated Navigation Route to /parent-fees */}
         <TouchableOpacity
           style={styles.tabItem}
           activeOpacity={0.8}
