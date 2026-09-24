@@ -14,13 +14,6 @@ export default function ParentFeesScreen() {
   const router = useRouter();
   const [showSlipSuccess, setShowSlipSuccess] = useState(false);
 
-  const handleUploadSlip = () => {
-    setShowSlipSuccess(true);
-    setTimeout(() => {
-      setShowSlipSuccess(false);
-    }, 3000);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -70,11 +63,11 @@ export default function ParentFeesScreen() {
             </View>
           </View>
 
-          {/* Action Button */}
+          {/* Action Button -> Navigates to /bank-transfer */}
           <TouchableOpacity
             style={styles.uploadSlipBtn}
             activeOpacity={0.8}
-            onPress={handleUploadSlip}
+            onPress={() => router.push("/bank-transfer" as any)}
           >
             <Text style={styles.uploadBtnText}>🏦 Transfer & Upload Slip</Text>
           </TouchableOpacity>
