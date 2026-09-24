@@ -14,7 +14,6 @@ export default function BankTransferScreen() {
   const router = useRouter();
   const [copiedAcc, setCopiedAcc] = useState(false);
   const [copiedAmt, setCopiedAmt] = useState(false);
-  const [uploaded, setUploaded] = useState(false);
 
   const handleCopyAcc = () => {
     setCopiedAcc(true);
@@ -26,12 +25,9 @@ export default function BankTransferScreen() {
     setTimeout(() => setCopiedAmt(false), 2000);
   };
 
-  const handleUpload = () => {
-    setUploaded(true);
-    setTimeout(() => {
-      setUploaded(false);
-      router.back();
-    }, 1500);
+  const handleProceedToUpload = () => {
+    // Navigates to Step 2: Upload Slip Screen
+    router.push("/upload-slip" as any);
   };
 
   return (
@@ -163,14 +159,14 @@ export default function BankTransferScreen() {
           </View>
         </View>
 
-        {/* Action Button */}
+        {/* Action Button -> Connects to Step 2 (/upload-slip) */}
         <TouchableOpacity
           style={styles.uploadBtn}
           activeOpacity={0.85}
-          onPress={handleUpload}
+          onPress={handleProceedToUpload}
         >
           <Text style={styles.uploadBtnText}>
-            📎 {uploaded ? "Uploading Slip..." : "I've Transferred — Upload Slip"}
+            📎 I've Transferred — Upload Slip
           </Text>
         </TouchableOpacity>
 
