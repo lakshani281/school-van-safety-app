@@ -31,7 +31,12 @@ export default function ParentDashboardScreen() {
           </View>
 
           <View style={styles.headerRightControls}>
-            <TouchableOpacity style={styles.bellBtn} activeOpacity={0.8}>
+            {/* Bell Icon -> Click to navigate to /parent-alerts */}
+            <TouchableOpacity
+              style={styles.bellBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push("/parent-alerts" as any)}
+            >
               <Text style={{ fontSize: 18 }}>🔔</Text>
               <View style={styles.bellBadgeDot} />
             </TouchableOpacity>
@@ -92,7 +97,12 @@ export default function ParentDashboardScreen() {
         <Text style={styles.sectionTitle}>My Children</Text>
 
         <View style={styles.childCard}>
-          <View style={[styles.childAvatarBox, { backgroundColor: "#FFF3D6", borderColor: "#F39C12" }]}>
+          <View
+            style={[
+              styles.childAvatarBox,
+              { backgroundColor: "#FFF3D6", borderColor: "#F39C12" },
+            ]}
+          >
             <Text style={[styles.childAvatarText, { color: "#F39C12" }]}>A</Text>
           </View>
           <View style={styles.childInfoBox}>
@@ -105,7 +115,12 @@ export default function ParentDashboardScreen() {
         </View>
 
         <View style={styles.childCard}>
-          <View style={[styles.childAvatarBox, { backgroundColor: "#E8F0FE", borderColor: "#3B82F6" }]}>
+          <View
+            style={[
+              styles.childAvatarBox,
+              { backgroundColor: "#E8F0FE", borderColor: "#3B82F6" },
+            ]}
+          >
             <Text style={[styles.childAvatarText, { color: "#3B82F6" }]}>T</Text>
           </View>
           <View style={styles.childInfoBox}>
@@ -120,7 +135,9 @@ export default function ParentDashboardScreen() {
         <View style={styles.absentToggleCard}>
           <View style={styles.absentToggleLeft}>
             <Text style={styles.absentToggleTitle}>🏚️ Mark Absent Today</Text>
-            <Text style={styles.absentToggleSubText}>Notify driver before 6:00 AM</Text>
+            <Text style={styles.absentToggleSubText}>
+              Notify driver before 6:00 AM
+            </Text>
           </View>
           <Switch
             value={isAbsent}
@@ -144,7 +161,9 @@ export default function ParentDashboardScreen() {
 
           <View style={styles.driverInfoBox}>
             <Text style={styles.driverName}>Budi Santoso</Text>
-            <Text style={styles.driverLicenseText}>Van GV-204 • License B1234ABC</Text>
+            <Text style={styles.driverLicenseText}>
+              Van GV-204 • License B1234ABC
+            </Text>
             <View style={styles.driverBadgesRow}>
               <View style={styles.ratingBadge}>
                 <Text style={styles.ratingText}>⭐ 4.9</Text>
@@ -184,7 +203,12 @@ export default function ParentDashboardScreen() {
           <Text style={styles.tabLabel}>Pay</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem} activeOpacity={0.8}>
+        {/* Alerts Tab Button -> Click to navigate to /parent-alerts */}
+        <TouchableOpacity
+          style={styles.tabItem}
+          activeOpacity={0.8}
+          onPress={() => router.push("/parent-alerts" as any)}
+        >
           <Text style={styles.tabIcon}>⚠️</Text>
           <Text style={styles.tabLabel}>Alerts</Text>
         </TouchableOpacity>
