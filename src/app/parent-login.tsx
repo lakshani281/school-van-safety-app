@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,12 +18,32 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function ParentLoginScreen() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const isPhoneValid = phoneNumber.trim().length >= 9;
 
-  const handleSendOTP = () => {
-    if (isPhoneValid) {
-      router.push("/parent-otp" as any);
+  const handleSendOTP = async () => {
+    if (!isPhoneValid) return;
+
+    // International format (+94771234567)
+    const formattedPhone = `+94${phoneNumber.trim().replace(/^0/, "")}`;
+
+    try {
+      setLoading(true);
+
+      setTimeout(() => {
+        setLoading(false);
+        // Navigate to Parent OTP screen with phone number parameter
+        router.push({
+          pathname: "/parent-otp" as any,
+          params: {
+            phoneNumber: formattedPhone,
+          },
+        });
+      }, 800);
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert("Error", "OTP කේතය යැවීමට නොහැකි විය. නැවත උත්සාහ කරන්න.");
     }
   };
 
@@ -69,19 +91,23 @@ export default function ParentLoginScreen() {
                 styles.sendOtpBtn,
                 isPhoneValid ? styles.sendOtpBtnActive : styles.sendOtpBtnDisabled,
               ]}
-              disabled={!isPhoneValid}
+              disabled={!isPhoneValid || loading}
               onPress={handleSendOTP}
             >
-              <Text
-                style={[
-                  styles.sendOtpBtnText,
-                  isPhoneValid
-                    ? styles.sendOtpBtnTextActive
-                    : styles.sendOtpBtnTextDisabled,
-                ]}
-              >
-                Send OTP →
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#1A252C" />
+              ) : (
+                <Text
+                  style={[
+                    styles.sendOtpBtnText,
+                    isPhoneValid
+                      ? styles.sendOtpBtnTextActive
+                      : styles.sendOtpBtnTextDisabled,
+                  ]}
+                >
+                  Send OTP →
+                </Text>
+              )}
             </TouchableOpacity>
 
             {/* Security Verification Info Card */}
