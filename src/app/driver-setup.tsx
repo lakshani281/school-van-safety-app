@@ -1,27 +1,69 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function DriverSetupScreen() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [serviceArea, setServiceArea] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const isFormValid = fullName.trim() !== "" && phoneNumber.trim() !== "";
 
-  const handleContinue = () => {
-    if (isFormValid) {
-      router.push("/vehicle-setup" as any);
+  const handleContinue = async () => {
+    if (!isFormValid) return;
+
+    try {
+      setLoading(true);
+
+      // Unique ID එකක් ලෙස Phone Number එක හෝ Custom Doc ID එකක් භාවිතා කළ හැක
+      const driverId = phoneNumber.replace(/[^0-9]/g, "");
+
+      // Firestore Database එකේ 'drivers' Collection එකට Step 1 Data එකතු කිරීම
+      await setDoc(
+        doc(db, "drivers", driverId),
+        {
+          fullName: fullName.trim(),
+          phoneNumber: phoneNumber.trim(),
+          serviceArea: serviceArea.trim(),
+          role: "driver",
+          stepCompleted: 1,
+          createdAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      setLoading(false);
+
+      // Step 2 (Vehicle Setup) එකට Data pass කරමින් Navigate කිරීම
+      router.push({
+        pathname: "/vehicle-setup" as any,
+        params: {
+          driverId,
+          fullName,
+          phoneNumber,
+        },
+      });
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert(
+        "Database Error",
+        error.message || "තොරතුරු සුරැකීමට නොහැකි විය. නැවත උත්සාහ කරන්න."
+      );
     }
   };
 
@@ -96,10 +138,14 @@ export default function DriverSetupScreen() {
             { backgroundColor: isFormValid ? "#F39C12" : "#F7D08A" },
           ]}
           activeOpacity={0.8}
-          disabled={!isFormValid}
+          disabled={!isFormValid || loading}
           onPress={handleContinue}
         >
-          <Text style={styles.buttonText}>Continue →</Text>
+          {loading ? (
+            <ActivityIndicator color="#1A252C" />
+          ) : (
+            <Text style={styles.buttonText}>Continue →</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
