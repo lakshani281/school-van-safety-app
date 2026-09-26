@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -9,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { collection, doc, onSnapshot, query, updateDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 interface Student {
   id: string;
@@ -22,82 +26,122 @@ interface Student {
   avatarColor: string;
 }
 
-const INITIAL_STUDENTS: Student[] = [
-  {
-    id: "1",
-    name: "Aisha Rahman",
-    grade: "Gr 4",
-    address: "12 Maplewood Dr",
-    distance: "1.2 km",
-    status: "pending",
-    avatarBg: "#FFF3D6",
-    avatarColor: "#F39C12",
-  },
-  {
-    id: "2",
-    name: "Omar Hassan",
-    grade: "Gr 6",
-    address: "8 Sunflower Ave",
-    distance: "2.1 km",
-    status: "pending",
-    avatarBg: "#E8F0FE",
-    avatarColor: "#3B82F6",
-  },
-  {
-    id: "3",
-    name: "Priya Mehta",
-    grade: "Gr 3",
-    address: "33 Cedar Lane",
-    distance: "0.8 km",
-    status: "absent",
-    absentNote: "Marked absent by parent • Skipping this stop",
-    avatarBg: "#EAEAEA",
-    avatarColor: "#7F8C8D",
-  },
-  {
-    id: "4",
-    name: "Lucas Silva",
-    grade: "Gr 5",
-    address: "90 Oak Street",
-    distance: "3.4 km",
-    status: "pending",
-    avatarBg: "#E6F9F0",
-    avatarColor: "#10B981",
-  },
-  {
-    id: "5",
-    name: "Zoe Kim",
-    grade: "Gr 2",
-    address: "17 Birch Blvd",
-    distance: "1.9 km",
-    status: "pending",
-    avatarBg: "#FEE2E2",
-    avatarColor: "#EF4444",
-  },
-];
-
 export default function StudentChecklistScreen() {
   const router = useRouter();
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleStatus = (id: string, newStatus: "picked" | "dropped") => {
-    setStudents((prev) =>
-      prev.map((student) => {
-        if (student.id === id) {
-          return {
-            ...student,
-            status: student.status === newStatus ? "pending" : newStatus,
-          };
+  useEffect(() => {
+    // Firestore-er 'students' collection theke Realtime Data Fetch kora
+    const q = query(collection(db, "students"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const studentList: Student[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          studentList.push({
+            id: docSnap.id,
+            name: data.fullName || "Student",
+            grade: data.grade ? `Gr ${data.grade}` : "Gr N/A",
+            address: data.pickupAddress || "Address N/A",
+            distance: "1.2 km",
+            status: data.status || "pending",
+            absentNote: data.absentNote || "Marked absent by parent",
+            avatarBg: data.avatarColor ? `${data.avatarColor}20` : "#FFF3D6",
+            avatarColor: data.avatarColor || "#F39C12",
+          });
+        });
+
+        // Fallback to initial sample data if collection is empty
+        if (studentList.length > 0) {
+          setStudents(studentList);
+        } else {
+          setStudents([
+            {
+              id: "1",
+              name: "Aisha Rahman",
+              grade: "Gr 4",
+              address: "12 Maplewood Dr",
+              distance: "1.2 km",
+              status: "pending",
+              avatarBg: "#FFF3D6",
+              avatarColor: "#F39C12",
+            },
+            {
+              id: "2",
+              name: "Omar Hassan",
+              grade: "Gr 6",
+              address: "8 Sunflower Ave",
+              distance: "2.1 km",
+              status: "pending",
+              avatarBg: "#E8F0FE",
+              avatarColor: "#3B82F6",
+            },
+            {
+              id: "3",
+              name: "Priya Mehta",
+              grade: "Gr 3",
+              address: "33 Cedar Lane",
+              distance: "0.8 km",
+              status: "absent",
+              absentNote: "Marked absent by parent • Skipping this stop",
+              avatarBg: "#EAEAEA",
+              avatarColor: "#7F8C8D",
+            },
+          ]);
         }
-        return student;
-      })
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching checklist students:", error);
+        setLoading(false);
+      }
     );
+
+    return () => unsubscribe();
+  }, []);
+
+  const toggleStatus = async (id: string, targetStatus: "picked" | "dropped") => {
+    // Find current student to determine new status toggle
+    const currentStudent = students.find((s) => s.id === id);
+    if (!currentStudent) return;
+
+    const newStatus =
+      currentStudent.status === targetStatus ? "pending" : targetStatus;
+
+    // Local UI Optimistic State Update
+    setStudents((prev) =>
+      prev.map((student) =>
+        student.id === id ? { ...student, status: newStatus } : student
+      )
+    );
+
+    // Firestore Realtime Update
+    try {
+      const studentDocRef = doc(db, "students", id);
+      await updateDoc(studentDocRef, {
+        status: newStatus,
+        lastUpdatedStatusAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error updating student status in Firestore:", error);
+      Alert.alert("Error", "Status update kora sombhov hoyni.");
+    }
   };
 
   const pickedCount = students.filter((s) => s.status === "picked").length;
   const droppedCount = students.filter((s) => s.status === "dropped").length;
   const absentCount = students.filter((s) => s.status === "absent").length;
   const markedCount = pickedCount + droppedCount;
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F39C12" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -163,7 +207,10 @@ export default function StudentChecklistScreen() {
                     ]}
                   >
                     <Text
-                      style={[styles.avatarText, { color: student.avatarColor }]}
+                      style={[
+                        styles.avatarText,
+                        { color: student.avatarColor },
+                      ]}
                     >
                       {student.name.charAt(0)}
                     </Text>
@@ -280,6 +327,12 @@ export default function StudentChecklistScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FAF7F2",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FAF7F2",
   },
   scrollContent: {
