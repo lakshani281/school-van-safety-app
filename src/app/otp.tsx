@@ -1,19 +1,26 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OtpScreen() {
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  // 6-digit OTP array
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [loading, setLoading] = useState(false);
   const inputs = useRef<Array<TextInput | null>>([]);
   const router = useRouter();
+
+  // Login Screen එකෙන් පාස් වුණු Phone Number එක ලබා ගැනීම
+  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
 
   const handleChangeText = (text: string, index: number) => {
     const newOtp = [...otp];
@@ -21,7 +28,7 @@ export default function OtpScreen() {
     setOtp(newOtp);
 
     // Auto focus next box
-    if (text && index < 3) {
+    if (text && index < 5) {
       inputs.current[index + 1]?.focus();
     }
   };
@@ -35,9 +42,26 @@ export default function OtpScreen() {
 
   const isOtpComplete = otp.every((digit) => digit !== "");
 
-  const handleVerify = () => {
-    if (isOtpComplete) {
-      router.push("/driver-setup" as any);
+  const handleVerify = async () => {
+    if (!isOtpComplete) return;
+
+    const enteredOtp = otp.join("");
+
+    try {
+      setLoading(true);
+
+      // Simple Validation check (Standard Test OTP is 123456)
+      if (enteredOtp === "123456") {
+        setLoading(false);
+        Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
+        router.push("/driver-setup" as any);
+      } else {
+        setLoading(false);
+        Alert.alert("OTP Error", "ඇතුළත් කළ OTP කේතය වැරදියි. (Try 123456)");
+      }
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert("Error", "තහවුරු කිරීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.");
     }
   };
 
@@ -58,11 +82,14 @@ export default function OtpScreen() {
       <View style={styles.contentContainer}>
         {/* Info Text */}
         <Text style={styles.sentText}>
-          Code sent to <Text style={styles.phoneBold}>+94 77 123 4567</Text>
+          Code sent to{" "}
+          <Text style={styles.phoneBold}>
+            {phoneNumber || "+94 77 123 4567"}
+          </Text>
         </Text>
-        <Text style={styles.hintText}>Hint: try 1 2 3 4</Text>
+        <Text style={styles.hintText}>Hint: try 1 2 3 4 5 6</Text>
 
-        {/* 4-Digit Input Boxes */}
+        {/* 6-Digit Input Boxes */}
         <View style={styles.otpContainer}>
           {otp.map((digit, index) => (
             <TextInput
@@ -90,16 +117,21 @@ export default function OtpScreen() {
             { backgroundColor: isOtpComplete ? "#F39C12" : "#F7D08A" },
           ]}
           activeOpacity={0.8}
-          disabled={!isOtpComplete}
+          disabled={!isOtpComplete || loading}
           onPress={handleVerify}
         >
-          <Text style={styles.buttonText}>Verify & Continue ✓</Text>
+          {loading ? (
+            <ActivityIndicator color="#1A252C" />
+          ) : (
+            <Text style={styles.buttonText}>Verify & Continue ✓</Text>
+          )}
         </TouchableOpacity>
 
         {/* Change Number Link */}
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.changeNumberBtn}
+          disabled={loading}
         >
           <Text style={styles.changeNumberText}>← Change number</Text>
         </TouchableOpacity>
@@ -162,17 +194,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
     marginBottom: 30,
   },
   otpBox: {
-    width: 62,
-    height: 65,
+    width: 45,
+    height: 58,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 2,
     textAlign: "center",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#1A252C",
     elevation: 1,
