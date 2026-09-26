@@ -1,6 +1,8 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,8 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ParentOtpScreen() {
   const router = useRouter();
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  // 6-digit OTP array for standard Firebase Auth
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [loading, setLoading] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  // Parent Login Screen එකෙන් පාස් වූ Phone Number එක ලබා ගැනීම
+  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
 
   const isOtpComplete = otp.every((digit) => digit.trim().length === 1);
 
@@ -26,7 +33,7 @@ export default function ParentOtpScreen() {
     setOtp(updatedOtp);
 
     // Auto-advance to next input field
-    if (text && index < 3) {
+    if (text && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -37,10 +44,27 @@ export default function ParentOtpScreen() {
     }
   };
 
-  const handleVerify = () => {
-    if (isOtpComplete) {
-      // Navigate to Parent Dashboard
-      router.push("/parent-dashboard" as any);
+  const handleVerify = async () => {
+    if (!isOtpComplete) return;
+
+    const enteredOtp = otp.join("");
+
+    try {
+      setLoading(true);
+
+      // Simple Validation check (Standard Test OTP is 123456)
+      if (enteredOtp === "123456") {
+        setLoading(false);
+        Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
+        // Parent Dashboard හෝ Registration Setup Screen එකට Navigate කිරීම
+        router.push("/parent-dashboard" as any);
+      } else {
+        setLoading(false);
+        Alert.alert("OTP Error", "ඇතුළත් කළ OTP කේතය වැරදියි. (Try 1 2 3 4 5 6)");
+      }
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert("Error", "තහවුරු කිරීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.");
     }
   };
 
@@ -71,11 +95,14 @@ export default function ParentOtpScreen() {
           {/* Body Content */}
           <View style={styles.formContainer}>
             <Text style={styles.sentNoticeText}>
-              Code sent to <Text style={styles.phoneNumberBold}>+94 77 123 4567</Text>
+              Code sent to{" "}
+              <Text style={styles.phoneNumberBold}>
+                {phoneNumber || "+94 77 123 4567"}
+              </Text>
             </Text>
-            <Text style={styles.hintText}>Hint: try 1 2 3 4</Text>
+            <Text style={styles.hintText}>Hint: try 1 2 3 4 5 6</Text>
 
-            {/* 4-Digit OTP Input Boxes */}
+            {/* 6-Digit OTP Input Boxes */}
             <View style={styles.otpInputRow}>
               {otp.map((digit, index) => (
                 <TextInput
@@ -104,19 +131,23 @@ export default function ParentOtpScreen() {
                 styles.verifyBtn,
                 isOtpComplete ? styles.verifyBtnActive : styles.verifyBtnDisabled,
               ]}
-              disabled={!isOtpComplete}
+              disabled={!isOtpComplete || loading}
               onPress={handleVerify}
             >
-              <Text
-                style={[
-                  styles.verifyBtnText,
-                  isOtpComplete
-                    ? styles.verifyBtnTextActive
-                    : styles.verifyBtnTextDisabled,
-                ]}
-              >
-                Verify & Continue ✓
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#1A252C" />
+              ) : (
+                <Text
+                  style={[
+                    styles.verifyBtnText,
+                    isOtpComplete
+                      ? styles.verifyBtnTextActive
+                      : styles.verifyBtnTextDisabled,
+                  ]}
+                >
+                  Verify & Continue ✓
+                </Text>
+              )}
             </TouchableOpacity>
 
             {/* Change Number Button */}
@@ -124,6 +155,7 @@ export default function ParentOtpScreen() {
               activeOpacity={0.7}
               onPress={handleChangeNumber}
               style={styles.changeNumberBtn}
+              disabled={loading}
             >
               <Text style={styles.changeNumberText}>← Change number</Text>
             </TouchableOpacity>
@@ -201,18 +233,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
     marginBottom: 32,
   },
   otpBox: {
-    width: 62,
-    height: 66,
-    borderRadius: 18,
+    width: 46,
+    height: 58,
+    borderRadius: 14,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
     borderColor: "#EAEAEA",
     textAlign: "center",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900",
     color: "#1A252C",
     elevation: 2,
