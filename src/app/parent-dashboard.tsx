@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -10,10 +11,74 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function ParentDashboardScreen() {
   const router = useRouter();
   const [isAbsent, setIsAbsent] = useState(false);
+  const [childrenList, setChildrenList] = useState<any[]>([]);
+  const [driverInfo, setDriverInfo] = useState<any>(null);
+  const [activeTrip, setActiveTrip] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const assignedDriverId = "94771234567"; // Current assigned driver ID
+
+  useEffect(() => {
+    // 1. Fetch Real-time Active Trip Data from 'trips' collection
+    const unsubTrip = onSnapshot(
+      doc(db, "trips", assignedDriverId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setActiveTrip(docSnap.data());
+        }
+      },
+      (error) => console.error("Error fetching trip:", error)
+    );
+
+    // 2. Fetch Assigned Driver Details from 'drivers' collection
+    const unsubDriver = onSnapshot(
+      doc(db, "drivers", assignedDriverId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setDriverInfo(docSnap.data());
+        }
+      },
+      (error) => console.error("Error fetching driver:", error)
+    );
+
+    // 3. Fetch Children list from 'students' collection
+    const q = query(collection(db, "students"));
+    const unsubStudents = onSnapshot(
+      q,
+      (snapshot) => {
+        const docs: any[] = [];
+        snapshot.forEach((doc) => {
+          docs.push({ id: doc.id, ...doc.data() });
+        });
+        setChildrenList(docs);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching children:", error);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubTrip();
+      unsubDriver();
+      unsubStudents();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F39C12" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,7 +103,7 @@ export default function ParentDashboardScreen() {
               onPress={() => router.push("/parent-alerts" as any)}
             >
               <Text style={{ fontSize: 18 }}>🔔</Text>
-              <View style={styles.bellBadgeDot} />
+              {activeTrip?.isOverSpeed && <View style={styles.bellBadgeDot} />}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -58,12 +123,24 @@ export default function ParentDashboardScreen() {
             <View style={styles.gridLineHorizontal} />
 
             <View style={styles.liveBadge}>
-              <View style={styles.liveGreenDot} />
-              <Text style={styles.liveBadgeText}>LIVE</Text>
+              <View
+                style={[
+                  styles.liveGreenDot,
+                  {
+                    backgroundColor:
+                      activeTrip?.status === "ONGOING" ? "#2ECC71" : "#95A5A6",
+                  },
+                ]}
+              />
+              <Text style={styles.liveBadgeText}>
+                {activeTrip?.status === "ONGOING" ? "LIVE" : "OFFLINE"}
+              </Text>
             </View>
 
             <View style={styles.speedBadge}>
-              <Text style={styles.speedBadgeText}>42 km/h</Text>
+              <Text style={styles.speedBadgeText}>
+                {activeTrip?.currentSpeed || 0} km/h
+              </Text>
             </View>
 
             <View style={styles.routePathContainer}>
@@ -84,7 +161,10 @@ export default function ParentDashboardScreen() {
             </View>
 
             <View style={styles.etaDetailsBox}>
-              <Text style={styles.etaTitle}>Van GV-204 arriving</Text>
+              <Text style={styles.etaTitle}>
+                Van {driverInfo?.vehicleNumber || "GV-204"}{" "}
+                {activeTrip?.status === "ONGOING" ? "arriving" : "idle"}
+              </Text>
               <Text style={styles.etaSubtitle}>800m • Jl. Maplewood Dr</Text>
               <View style={styles.etaProgressTrack}>
                 <View style={styles.etaProgressFill} />
@@ -96,41 +176,64 @@ export default function ParentDashboardScreen() {
         {/* My Children Section */}
         <Text style={styles.sectionTitle}>My Children</Text>
 
-        <View style={styles.childCard}>
-          <View
-            style={[
-              styles.childAvatarBox,
-              { backgroundColor: "#FFF3D6", borderColor: "#F39C12" },
-            ]}
-          >
-            <Text style={[styles.childAvatarText, { color: "#F39C12" }]}>A</Text>
-          </View>
-          <View style={styles.childInfoBox}>
-            <Text style={styles.childName}>Aisha Rahman</Text>
-            <Text style={styles.childSubInfo}>Grade 4 • Van GV-204</Text>
-            <View style={styles.boardedBadge}>
-              <Text style={styles.boardedBadgeText}>✓ Boarded 6:45 AM</Text>
+        {childrenList.length > 0 ? (
+          childrenList.map((child, index) => (
+            <View key={child.id || index} style={styles.childCard}>
+              <View
+                style={[
+                  styles.childAvatarBox,
+                  {
+                    backgroundColor: child.avatarColor
+                      ? `${child.avatarColor}20`
+                      : "#FFF3D6",
+                    borderColor: child.avatarColor || "#F39C12",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.childAvatarText,
+                    { color: child.avatarColor || "#F39C12" },
+                  ]}
+                >
+                  {child.fullName ? child.fullName.charAt(0).toUpperCase() : "C"}
+                </Text>
+              </View>
+              <View style={styles.childInfoBox}>
+                <Text style={styles.childName}>
+                  {child.fullName || "Aisha Rahman"}
+                </Text>
+                <Text style={styles.childSubInfo}>
+                  Grade {child.grade || "4"} • Van{" "}
+                  {child.vanNumber || driverInfo?.vehicleNumber || "GV-204"}
+                </Text>
+                <View style={styles.boardedBadge}>
+                  <Text style={styles.boardedBadgeText}>✓ Boarded 6:45 AM</Text>
+                </View>
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={styles.childCard}>
+            <View
+              style={[
+                styles.childAvatarBox,
+                { backgroundColor: "#FFF3D6", borderColor: "#F39C12" },
+              ]}
+            >
+              <Text style={[styles.childAvatarText, { color: "#F39C12" }]}>
+                A
+              </Text>
+            </View>
+            <View style={styles.childInfoBox}>
+              <Text style={styles.childName}>Aisha Rahman</Text>
+              <Text style={styles.childSubInfo}>Grade 4 • Van GV-204</Text>
+              <View style={styles.boardedBadge}>
+                <Text style={styles.boardedBadgeText}>✓ Boarded 6:45 AM</Text>
+              </View>
             </View>
           </View>
-        </View>
-
-        <View style={styles.childCard}>
-          <View
-            style={[
-              styles.childAvatarBox,
-              { backgroundColor: "#E8F0FE", borderColor: "#3B82F6" },
-            ]}
-          >
-            <Text style={[styles.childAvatarText, { color: "#3B82F6" }]}>T</Text>
-          </View>
-          <View style={styles.childInfoBox}>
-            <Text style={styles.childName}>Tariq Rahman</Text>
-            <Text style={styles.childSubInfo}>Grade 7 • Van GV-204</Text>
-            <View style={styles.enRouteBadge}>
-              <Text style={styles.enRouteBadgeText}>🚌 En Route</Text>
-            </View>
-          </View>
-        </View>
+        )}
 
         <View style={styles.absentToggleCard}>
           <View style={styles.absentToggleLeft}>
@@ -160,16 +263,21 @@ export default function ParentDashboardScreen() {
           </View>
 
           <View style={styles.driverInfoBox}>
-            <Text style={styles.driverName}>Budi Santoso</Text>
+            <Text style={styles.driverName}>
+              {driverInfo?.fullName || "Budi Santoso"}
+            </Text>
             <Text style={styles.driverLicenseText}>
-              Van GV-204 • License B1234ABC
+              Van {driverInfo?.vehicleNumber || "GV-204"} • License{" "}
+              {driverInfo?.licenseNumber || "B1234ABC"}
             </Text>
             <View style={styles.driverBadgesRow}>
               <View style={styles.ratingBadge}>
                 <Text style={styles.ratingText}>⭐ 4.9</Text>
               </View>
               <View style={styles.onDutyBadge}>
-                <Text style={styles.onDutyText}>On Duty</Text>
+                <Text style={styles.onDutyText}>
+                  {activeTrip?.status === "ONGOING" ? "On Duty" : "Off Duty"}
+                </Text>
               </View>
             </View>
           </View>
@@ -194,7 +302,7 @@ export default function ParentDashboardScreen() {
           <Text style={[styles.tabLabel, styles.activeTabLabel]}>Track</Text>
         </TouchableOpacity>
 
-        {/* Updated: Pay Button -> Navigates to /parent-fees */}
+        {/* Pay Button -> Navigates to /parent-fees */}
         <TouchableOpacity
           style={styles.tabItem}
           activeOpacity={0.8}
@@ -221,6 +329,12 @@ export default function ParentDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FAF7F2",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FAF7F2",
   },
   scrollContent: {
