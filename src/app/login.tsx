@@ -1,22 +1,47 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSendOtp = () => {
-    if (phoneNumber.length >= 9) {
-      router.push("/otp" as any);
+  const handleSendOtp = async () => {
+    if (phoneNumber.length < 9) return;
+
+    // Build international phone format (+94771234567)
+    const formattedPhone = `+94${phoneNumber.replace(/^0/, "")}`;
+
+    try {
+      setLoading(true);
+
+      // Simple navigation pass to OTP Screen for verification
+      setTimeout(() => {
+        setLoading(false);
+        router.push({
+          pathname: "/otp" as any,
+          params: {
+            phoneNumber: formattedPhone,
+          },
+        });
+      }, 800);
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert(
+        "Error",
+        "OTP කේතය යැවීමට නොහැකි විය. නැවත උත්සාහ කරන්න."
+      );
     }
   };
 
@@ -55,7 +80,7 @@ export default function LoginScreen() {
         </View>
 
         <Text style={styles.helperText}>
-          We'll send you a 4-digit verification code via SMS.
+          We'll send you a 6-digit verification code via SMS.
         </Text>
 
         {/* Send OTP Button */}
@@ -67,16 +92,21 @@ export default function LoginScreen() {
             },
           ]}
           activeOpacity={0.8}
-          disabled={phoneNumber.length < 9}
+          disabled={phoneNumber.length < 9 || loading}
           onPress={handleSendOtp}
         >
-          <Text style={styles.buttonText}>Send OTP →</Text>
+          {loading ? (
+            <ActivityIndicator color="#1A252C" />
+          ) : (
+            <Text style={styles.buttonText}>Send OTP →</Text>
+          )}
         </TouchableOpacity>
 
         {/* Back Link */}
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          disabled={loading}
         >
           <Text style={styles.backButtonText}>← Back to role select</Text>
         </TouchableOpacity>
