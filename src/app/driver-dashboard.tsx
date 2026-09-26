@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -9,48 +10,97 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { collection, doc, onSnapshot, query } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function DriverDashboard() {
   const router = useRouter();
 
-  const students = [
-    {
-      id: "1",
-      name: "Aisha Rahman",
-      address: "12 Maplewood Dr",
-      distance: "1.2 km",
-      status: "near",
-      initial: "A",
-      color: "#F39C12",
-    },
-    {
-      id: "2",
-      name: "Omar Hassan",
-      address: "8 Sunflower Ave",
-      distance: "2.1 km",
-      status: "near",
-      initial: "O",
-      color: "#2980B9",
-    },
-    {
-      id: "3",
-      name: "Priya Mehta",
-      address: "33 Cedar Lane",
-      distance: "Absent",
-      status: "absent",
-      initial: "P",
-      color: "#8E44AD",
-    },
-    {
-      id: "4",
-      name: "Lucas Silva",
-      address: "90 Oak Street",
-      distance: "3.4 km",
-      status: "near",
-      initial: "L",
-      color: "#2ECC71",
-    },
-  ];
+  const [driverData, setDriverData] = useState<any>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Default Test ID for Logged-In Driver
+  const currentDriverId = "94771234567";
+
+  useEffect(() => {
+    // 1. Fetch Real-time Driver Details from 'drivers' collection
+    const unsubDriver = onSnapshot(
+      doc(db, "drivers", currentDriverId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setDriverData(docSnap.data());
+        }
+      },
+      (error) => console.error("Error fetching driver:", error)
+    );
+
+    // 2. Fetch Real-time Students List from 'students' collection
+    const q = query(collection(db, "students"));
+    const unsubStudents = onSnapshot(
+      q,
+      (snapshot) => {
+        const studentList: any[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          studentList.push({
+            id: doc.id,
+            name: data.fullName || "Student",
+            address: data.pickupAddress || "Address not provided",
+            distance: "1.5 km", // Default distance label
+            status: "near",
+            initial: data.fullName ? data.fullName.charAt(0).toUpperCase() : "S",
+            color: data.avatarColor || "#F39C12",
+          });
+        });
+
+        // Fallback to initial static data if Firestore collection is empty
+        if (studentList.length > 0) {
+          setStudents(studentList);
+        } else {
+          setStudents([
+            {
+              id: "1",
+              name: "Aisha Rahman",
+              address: "12 Maplewood Dr",
+              distance: "1.2 km",
+              status: "near",
+              initial: "A",
+              color: "#F39C12",
+            },
+            {
+              id: "2",
+              name: "Omar Hassan",
+              address: "8 Sunflower Ave",
+              distance: "2.1 km",
+              status: "near",
+              initial: "O",
+              color: "#2980B9",
+            },
+            {
+              id: "3",
+              name: "Priya Mehta",
+              address: "33 Cedar Lane",
+              distance: "Absent",
+              status: "absent",
+              initial: "P",
+              color: "#8E44AD",
+            },
+          ]);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching students:", error);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubDriver();
+      unsubStudents();
+    };
+  }, []);
 
   const handleProfilePress = () => {
     router.push("/driver-profile" as any);
@@ -68,6 +118,24 @@ export default function DriverDashboard() {
     router.push("/fees" as any);
   };
 
+  // Helper function to extract initials from full name
+  const getInitials = (name?: string) => {
+    if (!name) return "DR";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F39C12" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1A252C" />
@@ -82,10 +150,14 @@ export default function DriverDashboard() {
             <View style={styles.headerTopRow}>
               <View>
                 <Text style={styles.welcomeText}>Welcome back 👋</Text>
-                <Text style={styles.driverName}>Budi Santoso</Text>
+                <Text style={styles.driverName}>
+                  {driverData?.fullName || "Budi Santoso"}
+                </Text>
               </View>
               <View style={styles.avatarCircle}>
-                <Text style={styles.avatarText}>BS</Text>
+                <Text style={styles.avatarText}>
+                  {getInitials(driverData?.fullName)}
+                </Text>
               </View>
             </View>
 
@@ -94,8 +166,12 @@ export default function DriverDashboard() {
               <View style={styles.infoBox}>
                 <Text style={{ fontSize: 20, marginRight: 8 }}>🚐</Text>
                 <View>
-                  <Text style={styles.infoTitle}>GV - 204</Text>
-                  <Text style={styles.infoSubText}>Toyota HiAce</Text>
+                  <Text style={styles.infoTitle}>
+                    {driverData?.vehicleNumber || "GV - 204"}
+                  </Text>
+                  <Text style={styles.infoSubText}>
+                    {driverData?.serviceArea || "Toyota HiAce"}
+                  </Text>
                 </View>
               </View>
 
@@ -122,12 +198,12 @@ export default function DriverDashboard() {
           <View style={styles.metricsRow}>
             <View style={styles.metricItem}>
               <Text style={{ fontSize: 18 }}>👨‍🎓</Text>
-              <Text style={styles.metricValue}>5</Text>
+              <Text style={styles.metricValue}>{students.length}</Text>
               <Text style={styles.metricLabel}>Students</Text>
             </View>
             <View style={styles.metricItem}>
               <Text style={{ fontSize: 18 }}>📍</Text>
-              <Text style={styles.metricValue}>5</Text>
+              <Text style={styles.metricValue}>{students.length}</Text>
               <Text style={styles.metricLabel}>Stops</Text>
             </View>
             <View style={styles.metricItem}>
@@ -230,6 +306,12 @@ export default function DriverDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FAF7F2",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FAF7F2",
   },
   scrollContainer: {
