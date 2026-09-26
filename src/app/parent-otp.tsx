@@ -56,8 +56,12 @@ export default function ParentOtpScreen() {
       if (enteredOtp === "123456") {
         setLoading(false);
         Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
-        // Parent Dashboard හෝ Registration Setup Screen එකට Navigate කිරීම
-        router.push("/parent-dashboard" as any);
+        
+        // Navigation: /add-child screen එකට Phone Number එකත් සමඟ යැවීම
+        router.push({
+          pathname: "/add-child" as any,
+          params: { phoneNumber },
+        });
       } else {
         setLoading(false);
         Alert.alert("OTP Error", "ඇතුළත් කළ OTP කේතය වැරදියි. (Try 1 2 3 4 5 6)");
