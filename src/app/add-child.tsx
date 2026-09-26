@@ -1,6 +1,8 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,9 +14,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { addDoc, collection } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function AddChildScreen() {
   const router = useRouter();
+
+  // Parent OTP Screen එකෙන් පාස් වූ Phone Number එක ලබා ගැනීම
+  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
 
   const [selectedColor, setSelectedColor] = useState("#3B82F6"); // Default Blue
   const [fullName, setFullName] = useState("");
@@ -22,16 +29,60 @@ export default function AddChildScreen() {
   const [schoolName, setSchoolName] = useState("");
   const [pickupAddress, setPickupAddress] = useState("");
   const [vanNumber, setVanNumber] = useState("GV-204");
+  const [loading, setLoading] = useState(false);
 
-  const colorOptions = ["#F39C12", "#3B82F6", "#A855F7", "#10B981", "#EF4444", "#F97316"];
+  const colorOptions = [
+    "#F39C12",
+    "#3B82F6",
+    "#A855F7",
+    "#10B981",
+    "#EF4444",
+    "#F97316",
+  ];
 
   const handleClose = () => {
     router.back();
   };
 
-  const handleAddChild = () => {
-    // Navigate back to Parent Profile or Dashboard after adding child
-    router.back();
+  const handleAddChild = async () => {
+    if (!fullName.trim() || !schoolName.trim()) {
+      Alert.alert(
+        "Validation Error",
+        "කරුණාකර දරුවාගේ නම සහ පාසල ඇතුළත් කරන්න."
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Firestore හි 'students' collection එකට දරුවාගේ දත්ත එකතු කිරීම
+      await addDoc(collection(db, "students"), {
+        parentPhoneNumber: phoneNumber || "",
+        avatarColor: selectedColor,
+        fullName: fullName.trim(),
+        grade: grade.trim(),
+        schoolName: schoolName.trim(),
+        pickupAddress: pickupAddress.trim(),
+        vanNumber: vanNumber.trim().toUpperCase(),
+        createdAt: new Date().toISOString(),
+      });
+
+      setLoading(false);
+
+      Alert.alert("Success", "දරුවාගේ තොරතුරු සාර්ථකව එකතු කරන ලදී!", [
+        {
+          text: "OK",
+          onPress: () => router.push("/parent-dashboard" as any),
+        },
+      ]);
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert(
+        "Database Error",
+        error.message || "දත්ත සුරැකීමට නොහැකි විය. නැවත උත්සාහ කරන්න."
+      );
+    }
   };
 
   return (
@@ -56,6 +107,7 @@ export default function AddChildScreen() {
               style={styles.closeBtn}
               onPress={handleClose}
               activeOpacity={0.8}
+              disabled={loading}
             >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
@@ -159,6 +211,7 @@ export default function AddChildScreen() {
                 placeholderTextColor="#A0AAB0"
                 value={vanNumber}
                 onChangeText={setVanNumber}
+                autoCapitalize="characters"
               />
             </View>
             <Text style={styles.helperText}>Ask your school admin if unsure</Text>
@@ -167,9 +220,14 @@ export default function AddChildScreen() {
             <TouchableOpacity
               style={styles.submitBtn}
               activeOpacity={0.8}
+              disabled={loading}
               onPress={handleAddChild}
             >
-              <Text style={styles.submitBtnText}>✓ Add Child</Text>
+              {loading ? (
+                <ActivityIndicator color="#1A252C" />
+              ) : (
+                <Text style={styles.submitBtnText}>✓ Add Child</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
