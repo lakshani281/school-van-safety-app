@@ -1,28 +1,66 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function VehicleSetupScreen() {
   const router = useRouter();
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Step 1 (Driver Setup) එකෙන් pass වූ driverId එක ලබා ගැනීම
+  const { driverId } = useLocalSearchParams<{ driverId: string }>();
 
   const isFormValid =
     vehicleNumber.trim() !== "" && licenseNumber.trim() !== "";
 
-  const handleCompleteSetup = () => {
-    if (isFormValid) {
-      router.push("/driver-dashboard" as any);
+  const handleCompleteSetup = async () => {
+    if (!isFormValid) return;
+
+    try {
+      setLoading(true);
+
+      // Document ID එකක් නැතිනම් Default ID එකක් භාවිත කිරීම
+      const docId = driverId || "default_driver";
+
+      // Firestore Database එකේ 'drivers' Collection එකේ අදාළ record එක update කිරීම
+      await updateDoc(doc(db, "drivers", docId), {
+        vehicleNumber: vehicleNumber.trim().toUpperCase(),
+        licenseNumber: licenseNumber.trim().toUpperCase(),
+        licenseExpiryDate: expiryDate.trim(),
+        stepCompleted: 2,
+        isProfileComplete: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      setLoading(false);
+
+      Alert.alert("Success", "ගිණුම සකස් කිරීම සාර්ථකයි!", [
+        {
+          text: "OK",
+          onPress: () => router.push("/driver-dashboard" as any),
+        },
+      ]);
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert(
+        "Database Error",
+        error.message || "තොරතුරු සුරැකීමට නොහැකි විය. නැවත උත්සාහ කරන්න."
+      );
     }
   };
 
@@ -98,6 +136,7 @@ export default function VehicleSetupScreen() {
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.8}
+          disabled={loading}
           onPress={() => router.back()}
         >
           <Text style={styles.backButtonText}>← Back</Text>
@@ -109,10 +148,14 @@ export default function VehicleSetupScreen() {
             { backgroundColor: isFormValid ? "#F39C12" : "#F7D08A" },
           ]}
           activeOpacity={0.8}
-          disabled={!isFormValid}
+          disabled={!isFormValid || loading}
           onPress={handleCompleteSetup}
         >
-          <Text style={styles.buttonText}>✓ Complete Setup</Text>
+          {loading ? (
+            <ActivityIndicator color="#1A252C" />
+          ) : (
+            <Text style={styles.buttonText}>✓ Complete Setup</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
