@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -10,17 +10,76 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function ActiveDriveScreen() {
   const router = useRouter();
-  // Speed Limit is set to 50 km/h
   const speedLimit = 50;
-  // Default speed set to 52 km/h to demonstrate the Over Speed Warning UI
   const [currentSpeed, setCurrentSpeed] = useState(52);
+  const [tripData, setTripData] = useState<any>(null);
 
   const isOverSpeed = currentSpeed > speedLimit;
+  const activeDriverId = "94771234567"; // Current active driver ID
 
-  const handleSOSPress = () => {
+  useEffect(() => {
+    // 1. Initialise/Start Trip state in Firestore when Active Drive loads
+    const startTripInFirestore = async () => {
+      try {
+        await setDoc(
+          doc(db, "trips", activeDriverId),
+          {
+            driverId: activeDriverId,
+            status: "ONGOING",
+            currentSpeed: currentSpeed,
+            speedLimit: speedLimit,
+            isOverSpeed: isOverSpeed,
+            currentStop: 2,
+            totalStops: 5,
+            startedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("Error starting trip in Firestore:", error);
+      }
+    };
+
+    startTripInFirestore();
+
+    // 2. Listen to real-time updates for this active trip
+    const unsubscribe = onSnapshot(doc(db, "trips", activeDriverId), (docSnap) => {
+      if (docSnap.exists()) {
+        setTripData(docSnap.data());
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Update speed & overspeed warning in Firestore whenever currentSpeed changes
+  const updateSpeedInFirestore = async (newSpeed: number) => {
+    try {
+      await updateDoc(doc(db, "trips", activeDriverId), {
+        currentSpeed: newSpeed,
+        isOverSpeed: newSpeed > speedLimit,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error updating speed:", error);
+    }
+  };
+
+  const handleSOSPress = async () => {
+    try {
+      await updateDoc(doc(db, "trips", activeDriverId), {
+        sosAlert: true,
+        sosTriggeredAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error triggering SOS:", error);
+    }
+
     Alert.alert(
       "Emergency SOS Triggered",
       "Notifying school admin, parents, and emergency services immediately!",
@@ -34,14 +93,27 @@ export default function ActiveDriveScreen() {
       {
         text: "End Trip",
         style: "destructive",
-        onPress: () => router.push("/driver-dashboard" as any),
+        onPress: async () => {
+          try {
+            // Update trip status to COMPLETED in Firestore
+            await updateDoc(doc(db, "trips", activeDriverId), {
+              status: "COMPLETED",
+              endedAt: new Date().toISOString(),
+            });
+            router.push("/driver-dashboard" as any);
+          } catch (error) {
+            Alert.alert("Error", "Trip එක අවසන් කිරීමට නොහැකි විය.");
+          }
+        },
       },
     ]);
   };
 
-  // Helper function to toggle speed for UI testing (46 km/h normal vs 52 km/h overspeed)
+  // Helper function to toggle speed for UI testing & sync with Firestore
   const toggleSpeedTest = () => {
-    setCurrentSpeed((prev) => (prev > speedLimit ? 46 : 52));
+    const nextSpeed = currentSpeed > speedLimit ? 46 : 52;
+    setCurrentSpeed(nextSpeed);
+    updateSpeedInFirestore(nextSpeed);
   };
 
   return (
@@ -55,7 +127,7 @@ export default function ActiveDriveScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Dynamic Speed & Emergency Header (Changes to Red on Over-Speed) */}
+        {/* Dynamic Speed & Emergency Header */}
         <TouchableOpacity activeOpacity={0.95} onPress={toggleSpeedTest}>
           <View
             style={[
@@ -127,7 +199,6 @@ export default function ActiveDriveScreen() {
         <View style={styles.bodyContent}>
           <View style={styles.mapCard}>
             <View style={styles.mapGridLines}>
-              {/* Vertical & Horizontal Grid Mock Lines */}
               <View style={styles.gridVerticalLine} />
               <View style={styles.gridHorizontalLine} />
             </View>
@@ -145,7 +216,9 @@ export default function ActiveDriveScreen() {
 
             {/* Stop Indicator Tag */}
             <View style={styles.stopTag}>
-              <Text style={styles.stopTagText}>Stop 2/5 • 1.2km</Text>
+              <Text style={styles.stopTagText}>
+                Stop {tripData?.currentStop || 2}/{tripData?.totalStops || 5} • 1.2km
+              </Text>
             </View>
           </View>
 
@@ -380,8 +453,8 @@ const styles = StyleSheet.create({
     borderColor: "#D5E5D3",
   },
   mapGridLines: {
-    ...StyleSheet.absoluteFill,
-  },
+  ...StyleSheet.absoluteFill,
+},
   gridVerticalLine: {
     position: "absolute",
     left: "50%",
