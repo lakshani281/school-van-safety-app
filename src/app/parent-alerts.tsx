@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -9,10 +9,30 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function ParentAlertsScreen() {
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(2);
+  const [liveTrip, setLiveTrip] = useState<any>(null);
+
+  const assignedDriverId = "94771234567";
+
+  useEffect(() => {
+    // Listen to live trip speed & SOS alerts from Firestore
+    const unsubTrip = onSnapshot(
+      doc(db, "trips", assignedDriverId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setLiveTrip(docSnap.data());
+        }
+      },
+      (error) => console.error("Error fetching trip alerts:", error)
+    );
+
+    return () => unsubTrip();
+  }, []);
 
   const handleMarkAllRead = () => {
     setUnreadCount(0);
@@ -32,9 +52,11 @@ export default function ParentAlertsScreen() {
             <Text style={styles.subHeaderTitle}>Activity</Text>
             <View style={styles.titleWithBadge}>
               <Text style={styles.mainTitle}>Notifications</Text>
-              {unreadCount > 0 && (
+              {(unreadCount > 0 || liveTrip?.isOverSpeed || liveTrip?.sosAlert) && (
                 <View style={styles.countBadge}>
-                  <Text style={styles.countBadgeText}>{unreadCount}</Text>
+                  <Text style={styles.countBadgeText}>
+                    {unreadCount + (liveTrip?.isOverSpeed ? 1 : 0) + (liveTrip?.sosAlert ? 1 : 0)}
+                  </Text>
                 </View>
               )}
             </View>
@@ -52,6 +74,50 @@ export default function ParentAlertsScreen() {
         {/* TODAY SECTION */}
         <Text style={styles.sectionHeader}>TODAY</Text>
 
+        {/* Live SOS Alert Banner (Displays Real-time when Driver Triggers SOS) */}
+        {liveTrip?.sosAlert && (
+          <View style={[styles.alertCard, { borderColor: "#FF3B30", backgroundColor: "#FFF5F5" }]}>
+            <View style={[styles.iconBox, { backgroundColor: "#FFE5E5" }]}>
+              <Text style={{ fontSize: 16, fontWeight: "900", color: "#FF3B30" }}>
+                SOS
+              </Text>
+            </View>
+            <View style={styles.alertDetails}>
+              <Text style={[styles.alertTitle, { color: "#FF3B30" }]}>
+                CRITICAL SOS ALERT TRIGGERED 🆘
+              </Text>
+              <Text style={styles.alertSubtitle}>
+                Driver pressed emergency button during active trip!
+              </Text>
+              <Text style={styles.timeText}>Just now</Text>
+            </View>
+            <View style={styles.redUnreadDot} />
+          </View>
+        )}
+
+        {/* Live Speed Alert (Displays Real-time when Driver Exceeds Speed Limit) */}
+        {liveTrip?.isOverSpeed && (
+          <TouchableOpacity
+            style={[styles.alertCard, styles.speedWarningCard]}
+            activeOpacity={0.8}
+            onPress={() => router.push("/speed-alert" as any)}
+          >
+            <View style={[styles.iconBox, { backgroundColor: "#FFF3D6" }]}>
+              <Text style={{ fontSize: 20 }}>⚡</Text>
+            </View>
+            <View style={styles.alertDetails}>
+              <Text style={styles.alertTitle}>
+                Speed limit exceeded: {liveTrip.currentSpeed} km/h ⚠️
+              </Text>
+              <Text style={styles.alertSubtitle}>
+                Driver exceeded limit ({liveTrip.speedLimit || 50} km/h) on active route
+              </Text>
+              <Text style={styles.timeText}>Live Speed Alert</Text>
+            </View>
+            <View style={styles.redUnreadDot} />
+          </TouchableOpacity>
+        )}
+
         {/* Alert 1 */}
         <View style={styles.alertCard}>
           <View style={[styles.iconBox, { backgroundColor: "#E6F9F0" }]}>
@@ -65,24 +131,26 @@ export default function ParentAlertsScreen() {
           {unreadCount > 0 && <View style={styles.greenUnreadDot} />}
         </View>
 
-        {/* Alert 2 (Speed Warning -> Navigates to /speed-alert) */}
-        <TouchableOpacity
-          style={[styles.alertCard, styles.speedWarningCard]}
-          activeOpacity={0.8}
-          onPress={() => router.push("/speed-alert" as any)}
-        >
-          <View style={[styles.iconBox, { backgroundColor: "#FFF3D6" }]}>
-            <Text style={{ fontSize: 20 }}>⚡</Text>
-          </View>
-          <View style={styles.alertDetails}>
-            <Text style={styles.alertTitle}>Speed alert on GV-204 ⚠️</Text>
-            <Text style={styles.alertSubtitle}>
-              Driver reached 62 km/h near school zone
-            </Text>
-            <Text style={styles.timeText}>7:12 AM</Text>
-          </View>
-          {unreadCount > 0 && <View style={styles.redUnreadDot} />}
-        </TouchableOpacity>
+        {/* Static Speed Warning Card (Navigates to /speed-alert) */}
+        {!liveTrip?.isOverSpeed && (
+          <TouchableOpacity
+            style={[styles.alertCard, styles.speedWarningCard]}
+            activeOpacity={0.8}
+            onPress={() => router.push("/speed-alert" as any)}
+          >
+            <View style={[styles.iconBox, { backgroundColor: "#FFF3D6" }]}>
+              <Text style={{ fontSize: 20 }}>⚡</Text>
+            </View>
+            <View style={styles.alertDetails}>
+              <Text style={styles.alertTitle}>Speed alert on GV-204 ⚠️</Text>
+              <Text style={styles.alertSubtitle}>
+                Driver reached 62 km/h near school zone
+              </Text>
+              <Text style={styles.timeText}>7:12 AM</Text>
+            </View>
+            {unreadCount > 0 && <View style={styles.redUnreadDot} />}
+          </TouchableOpacity>
+        )}
 
         {/* Alert 3 */}
         <View style={styles.alertCard}>
