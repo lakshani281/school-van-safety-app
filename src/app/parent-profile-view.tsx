@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -10,14 +11,50 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function ParentProfileViewScreen() {
   const router = useRouter();
   const [speedAlerts, setSpeedAlerts] = useState(true);
   const [arrivalAlerts, setArrivalAlerts] = useState(true);
+  const [childrenList, setChildrenList] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Realtime Fetch linked children from Firestore 'students' collection
+    const q = query(collection(db, "students"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const docs: any[] = [];
+        snapshot.forEach((docSnap) => {
+          docs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        setChildrenList(docs);
+      },
+      (error) => console.error("Error fetching linked children:", error)
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   const handleClose = () => {
     router.back();
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out from SafeRide?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: () => router.replace("/parent-login" as any),
+        },
+      ]
+    );
   };
 
   return (
@@ -49,7 +86,7 @@ export default function ParentProfileViewScreen() {
 
             <View style={styles.parentMainDetails}>
               <Text style={styles.parentName}>Fatima Rahman</Text>
-              <Text style={styles.phoneText}>+94 812-3456-7890</Text>
+              <Text style={styles.phoneText}>+94 77-123-4567</Text>
 
               <View style={styles.accountBadge}>
                 <Text style={styles.accountBadgeText}>PARENT ACCOUNT</Text>
@@ -60,7 +97,9 @@ export default function ParentProfileViewScreen() {
           {/* Stats Bar (Children, Van, Trips) */}
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>2</Text>
+              <Text style={styles.statNumber}>
+                {childrenList.length > 0 ? childrenList.length : 2}
+              </Text>
               <Text style={styles.statLabel}>Children</Text>
             </View>
 
@@ -80,7 +119,7 @@ export default function ParentProfileViewScreen() {
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Linked Children</Text>
 
-          {/* + Add Child Button - Click to navigate to /add-child */}
+          {/* + Add Child Button - Navigates to /add-child */}
           <TouchableOpacity
             style={styles.addChildBtn}
             activeOpacity={0.8}
@@ -90,51 +129,99 @@ export default function ParentProfileViewScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Child 1 */}
-        <View style={styles.childCard}>
-          <View
-            style={[
-              styles.childAvatarBox,
-              { backgroundColor: "#FFF3D6", borderColor: "#F39C12" },
-            ]}
-          >
-            <Text style={[styles.childAvatarText, { color: "#F39C12" }]}>A</Text>
-          </View>
+        {/* Dynamic / Fallback Children Cards */}
+        {childrenList.length > 0 ? (
+          childrenList.map((child, index) => (
+            <View key={child.id || index} style={styles.childCard}>
+              <View
+                style={[
+                  styles.childAvatarBox,
+                  {
+                    backgroundColor: child.avatarColor
+                      ? `${child.avatarColor}20`
+                      : "#FFF3D6",
+                    borderColor: child.avatarColor || "#F39C12",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.childAvatarText,
+                    { color: child.avatarColor || "#F39C12" },
+                  ]}
+                >
+                  {child.fullName ? child.fullName.charAt(0).toUpperCase() : "C"}
+                </Text>
+              </View>
 
-          <View style={styles.childInfoBox}>
-            <Text style={styles.childName}>Aisha Rahman</Text>
-            <Text style={styles.childSubText}>
-              Greenfield Academy • Grade 4 • Van GV-204
-            </Text>
-          </View>
+              <View style={styles.childInfoBox}>
+                <Text style={styles.childName}>
+                  {child.fullName || "Aisha Rahman"}
+                </Text>
+                <Text style={styles.childSubText}>
+                  Greenfield Academy • Grade {child.grade || "4"} • Van{" "}
+                  {child.vanNumber || "GV-204"}
+                </Text>
+              </View>
 
-          <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
-            <Text style={styles.callBtnText}>📞 Call</Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
+                <Text style={styles.callBtnText}>📞 Call</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <>
+            {/* Child 1 */}
+            <View style={styles.childCard}>
+              <View
+                style={[
+                  styles.childAvatarBox,
+                  { backgroundColor: "#FFF3D6", borderColor: "#F39C12" },
+                ]}
+              >
+                <Text style={[styles.childAvatarText, { color: "#F39C12" }]}>
+                  A
+                </Text>
+              </View>
 
-        {/* Child 2 */}
-        <View style={styles.childCard}>
-          <View
-            style={[
-              styles.childAvatarBox,
-              { backgroundColor: "#E8F0FE", borderColor: "#3B82F6" },
-            ]}
-          >
-            <Text style={[styles.childAvatarText, { color: "#3B82F6" }]}>T</Text>
-          </View>
+              <View style={styles.childInfoBox}>
+                <Text style={styles.childName}>Aisha Rahman</Text>
+                <Text style={styles.childSubText}>
+                  Greenfield Academy • Grade 4 • Van GV-204
+                </Text>
+              </View>
 
-          <View style={styles.childInfoBox}>
-            <Text style={styles.childName}>Tariq Rahman</Text>
-            <Text style={styles.childSubText}>
-              Greenfield Academy • Grade 7 • Van GV-204
-            </Text>
-          </View>
+              <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
+                <Text style={styles.callBtnText}>📞 Call</Text>
+              </TouchableOpacity>
+            </View>
 
-          <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
-            <Text style={styles.callBtnText}>📞 Call</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Child 2 */}
+            <View style={styles.childCard}>
+              <View
+                style={[
+                  styles.childAvatarBox,
+                  { backgroundColor: "#E8F0FE", borderColor: "#3B82F6" },
+                ]}
+              >
+                <Text style={[styles.childAvatarText, { color: "#3B82F6" }]}>
+                  T
+                </Text>
+              </View>
+
+              <View style={styles.childInfoBox}>
+                <Text style={styles.childName}>Tariq Rahman</Text>
+                <Text style={styles.childSubText}>
+                  Greenfield Academy • Grade 7 • Van GV-204
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
+                <Text style={styles.callBtnText}>📞 Call</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
         {/* Pickup Address Section */}
         <Text style={styles.sectionTitleStandalone}>Pickup Address</Text>
@@ -145,7 +232,7 @@ export default function ParentProfileViewScreen() {
 
           <View style={styles.addressDetailsBox}>
             <Text style={styles.addressTitle}>12 Maplewood Drive, Block C</Text>
-            <Text style={styles.addressSubText}>South Jakarta • 12750</Text>
+            <Text style={styles.addressSubText}>Colombo Fort • 00100</Text>
             <TouchableOpacity activeOpacity={0.7} style={{ marginTop: 4 }}>
               <Text style={styles.editAddressText}>Edit address →</Text>
             </TouchableOpacity>
@@ -162,7 +249,9 @@ export default function ParentProfileViewScreen() {
           </View>
           <View style={styles.toggleInfoBox}>
             <Text style={styles.toggleTitle}>Speed Alerts</Text>
-            <Text style={styles.toggleSubText}>Notify when van exceeds 50 km/h</Text>
+            <Text style={styles.toggleSubText}>
+              Notify when van exceeds 50 km/h
+            </Text>
           </View>
           <Switch
             value={speedAlerts}
@@ -179,7 +268,9 @@ export default function ParentProfileViewScreen() {
           </View>
           <View style={styles.toggleInfoBox}>
             <Text style={styles.toggleTitle}>Arrival Alerts</Text>
-            <Text style={styles.toggleSubText}>Push when van is 5 min away</Text>
+            <Text style={styles.toggleSubText}>
+              Push when van is 5 min away
+            </Text>
           </View>
           <Switch
             value={arrivalAlerts}
@@ -188,6 +279,15 @@ export default function ParentProfileViewScreen() {
             thumbColor="#FFFFFF"
           />
         </View>
+
+        {/* Log Out Button */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          activeOpacity={0.8}
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutBtnText}>🚪 Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -455,5 +555,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#7F8C8D",
     marginTop: 2,
+  },
+  logoutBtn: {
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1.5,
+    borderColor: "#FF3B30",
+    marginHorizontal: 20,
+    marginTop: 24,
+    paddingVertical: 16,
+    borderRadius: 20,
+    alignItems: "center",
+  },
+  logoutBtnText: {
+    color: "#FF3B30",
+    fontSize: 15,
+    fontWeight: "900",
   },
 });
