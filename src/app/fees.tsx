@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -9,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { collection, doc, onSnapshot, query, updateDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 interface StudentFee {
   id: string;
@@ -17,7 +21,7 @@ interface StudentFee {
   parent: string;
   parentPhone: string;
   amount: string;
-  status: "paid" | "unpaid";
+  status: "paid" | "unpaid" | "pending_review";
   paymentMethod?: string;
   paidDate?: string;
   note?: string;
@@ -25,94 +29,137 @@ interface StudentFee {
   avatarColor: string;
 }
 
-const INITIAL_FEES: StudentFee[] = [
-  {
-    id: "1",
-    name: "Aisha Rahman",
-    grade: "Gr 4",
-    parent: "Mrs. Rahman",
-    parentPhone: "077-123-4567",
-    amount: "LKR 4,500",
-    status: "paid",
-    paymentMethod: "Cash",
-    paidDate: "02 Sep 2026",
-    note: "Paid via cash to driver",
-    avatarBg: "#FFF3D6",
-    avatarColor: "#F39C12",
-  },
-  {
-    id: "2",
-    name: "Omar Hassan",
-    grade: "Gr 6",
-    parent: "Mr. Hassan",
-    parentPhone: "071-987-6543",
-    amount: "LKR 5,000",
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    paidDate: "01 Sep 2026",
-    note: "—",
-    avatarBg: "#E8F0FE",
-    avatarColor: "#3B82F6",
-  },
-  {
-    id: "3",
-    name: "Priya Mehta",
-    grade: "Gr 3",
-    parent: "Mrs. Mehta",
-    parentPhone: "075-456-7890",
-    amount: "LKR 4,500",
-    status: "unpaid",
-    avatarBg: "#F3E8FF",
-    avatarColor: "#A855F7",
-  },
-  {
-    id: "4",
-    name: "Lucas Silva",
-    grade: "Gr 5",
-    parent: "Mr. Silva",
-    parentPhone: "072-333-4444",
-    amount: "LKR 6,000",
-    status: "unpaid",
-    avatarBg: "#E6F9F0",
-    avatarColor: "#10B981",
-  },
-  {
-    id: "5",
-    name: "Zoe Kim",
-    grade: "Gr 2",
-    parent: "Mrs. Kim",
-    parentPhone: "078-999-0000",
-    amount: "LKR 4,500",
-    status: "paid",
-    paymentMethod: "Cash",
-    paidDate: "03 Sep 2026",
-    note: "—",
-    avatarBg: "#FEE2E2",
-    avatarColor: "#EF4444",
-  },
-];
-
 export default function FeesScreen() {
   const router = useRouter();
-  const [feeList] = useState<StudentFee[]>(INITIAL_FEES);
+  const [feeList, setFeeList] = useState<StudentFee[]>([]);
   const [filter, setFilter] = useState<"all" | "paid" | "unpaid">("all");
-  // Expanded Student Card ID tracking state
-  const [expandedId, setExpandedId] = useState<string | null>("2"); // Default expanded: Omar Hassan
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Listen to real-time payments collection from Firestore
+    const q = query(collection(db, "payments"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const feesData: StudentFee[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const isPaid = data.status === "PAID";
+          const isPending = data.status === "PENDING_REVIEW";
+
+          feesData.push({
+            id: docSnap.id,
+            name: data.studentName || "Student",
+            grade: data.grade ? `Gr ${data.grade}` : "Gr 4",
+            parent: data.parentName || "Parent",
+            parentPhone: data.parentPhone || "077-123-4567",
+            amount: data.amount ? `LKR ${data.amount.toLocaleString()}` : "LKR 4,500",
+            status: isPaid ? "paid" : isPending ? "pending_review" : "unpaid",
+            paymentMethod: data.method || "Bank Transfer",
+            paidDate: data.paidDate || "02 Sep 2026",
+            note: data.note || "—",
+            avatarBg: data.avatarColor ? `${data.avatarColor}20` : "#FFF3D6",
+            avatarColor: data.avatarColor || "#F39C12",
+          });
+        });
+
+        // Fallback to initial mock data if collection is empty
+        if (feesData.length > 0) {
+          setFeeList(feesData);
+        } else {
+          setFeeList([
+            {
+              id: "1",
+              name: "Aisha Rahman",
+              grade: "Gr 4",
+              parent: "Mrs. Rahman",
+              parentPhone: "077-123-4567",
+              amount: "LKR 4,500",
+              status: "paid",
+              paymentMethod: "Cash",
+              paidDate: "02 Sep 2026",
+              note: "Paid via cash to driver",
+              avatarBg: "#FFF3D6",
+              avatarColor: "#F39C12",
+            },
+            {
+              id: "2",
+              name: "Omar Hassan",
+              grade: "Gr 6",
+              parent: "Mr. Hassan",
+              parentPhone: "071-987-6543",
+              amount: "LKR 5,000",
+              status: "paid",
+              paymentMethod: "Bank Transfer",
+              paidDate: "01 Sep 2026",
+              note: "—",
+              avatarBg: "#E8F0FE",
+              avatarColor: "#3B82F6",
+            },
+            {
+              id: "3",
+              name: "Priya Mehta",
+              grade: "Gr 3",
+              parent: "Mrs. Mehta",
+              parentPhone: "075-456-7890",
+              amount: "LKR 4,500",
+              status: "unpaid",
+              avatarBg: "#F3E8FF",
+              avatarColor: "#A855F7",
+            },
+          ]);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching driver fees list:", error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const markAsPaidInFirestore = async (id: string) => {
+    try {
+      await updateDoc(doc(db, "payments", id), {
+        status: "PAID",
+        paidDate: new Date().toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+      });
+      Alert.alert("Success", "Payment marked as Paid!");
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      Alert.alert("Error", "Status update කිරීමට නොහැකි විය.");
+    }
+  };
 
   const paidCount = feeList.filter((item) => item.status === "paid").length;
-  const unpaidCount = feeList.filter((item) => item.status === "unpaid").length;
-  const totalCount = feeList.length;
+  const unpaidCount = feeList.filter((item) => item.status !== "paid").length;
+  const totalCount = feeList.length || 1;
   const percentagePaid = Math.round((paidCount / totalCount) * 100);
 
   const filteredFees = feeList.filter((item) => {
     if (filter === "paid") return item.status === "paid";
-    if (filter === "unpaid") return item.status === "unpaid";
+    if (filter === "unpaid") return item.status !== "paid";
     return true;
   });
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F39C12" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -162,7 +209,7 @@ export default function FeesScreen() {
           </View>
         </View>
 
-        {/* Filter Tab Chips (All, Paid, Unpaid) */}
+        {/* Filter Tab Chips */}
         <View style={styles.filterTabsRow}>
           <TouchableOpacity
             style={[
@@ -223,6 +270,7 @@ export default function FeesScreen() {
         <View style={styles.feeListContainer}>
           {filteredFees.map((student) => {
             const isPaid = student.status === "paid";
+            const isPending = student.status === "pending_review";
             const isExpanded = expandedId === student.id;
 
             return (
@@ -238,7 +286,7 @@ export default function FeesScreen() {
                   onPress={() => toggleExpand(student.id)}
                 >
                   <View style={styles.feeCardContent}>
-                    {/* Left Avatar Icon with Check/Alert Badge */}
+                    {/* Left Avatar Icon */}
                     <View style={styles.avatarWrapper}>
                       <View
                         style={[
@@ -261,11 +309,17 @@ export default function FeesScreen() {
                       <View
                         style={[
                           styles.statusBadgeIcon,
-                          { backgroundColor: isPaid ? "#2ECC71" : "#EF4444" },
+                          {
+                            backgroundColor: isPaid
+                              ? "#2ECC71"
+                              : isPending
+                              ? "#F39C12"
+                              : "#EF4444",
+                          },
                         ]}
                       >
                         <Text style={styles.statusBadgeIconText}>
-                          {isPaid ? "✓" : "!"}
+                          {isPaid ? "✓" : isPending ? "⌛" : "!"}
                         </Text>
                       </View>
                     </View>
@@ -283,21 +337,29 @@ export default function FeesScreen() {
                       ) : null}
                     </View>
 
-                    {/* Right Status Label and LKR Amount */}
+                    {/* Right Status Label */}
                     <View style={styles.feeRightBox}>
                       <View
                         style={[
                           styles.paidStatusTag,
-                          isPaid ? styles.paidTagBg : styles.unpaidTagBg,
+                          isPaid
+                            ? styles.paidTagBg
+                            : isPending
+                            ? styles.pendingTagBg
+                            : styles.unpaidTagBg,
                         ]}
                       >
                         <Text
                           style={[
                             styles.paidStatusText,
-                            isPaid ? styles.paidTagText : styles.unpaidTagText,
+                            isPaid
+                              ? styles.paidTagText
+                              : isPending
+                              ? styles.pendingTagText
+                              : styles.unpaidTagText,
                           ]}
                         >
-                          {isPaid ? "PAID" : "UNPAID"}
+                          {isPaid ? "PAID" : isPending ? "REVIEW" : "UNPAID"}
                         </Text>
                       </View>
 
@@ -316,7 +378,6 @@ export default function FeesScreen() {
                 {isExpanded && (
                   <View style={styles.expandedContainer}>
                     {isPaid ? (
-                      /* Paid Student Expanded Details Box */
                       <View style={styles.paidDetailsCard}>
                         <View style={styles.detailRow}>
                           <View style={styles.detailCol}>
@@ -349,26 +410,33 @@ export default function FeesScreen() {
                         </View>
                       </View>
                     ) : (
-                      /* Unpaid Student Expanded Details Box */
                       <View style={styles.unpaidDetailsCard}>
                         <View style={styles.unpaidNoticeBox}>
-                          <Text style={{ fontSize: 20, marginRight: 8 }}>⚠️</Text>
-                          <View>
+                          <Text style={{ fontSize: 20, marginRight: 8 }}>
+                            {isPending ? "📄" : "⚠️"}
+                          </Text>
+                          <View style={{ flex: 1 }}>
                             <Text style={styles.unpaidTitle}>
-                              Fee Not Paid — {student.amount}
+                              {isPending
+                                ? `Slip Uploaded — ${student.amount}`
+                                : `Fee Not Paid — ${student.amount}`}
                             </Text>
                             <Text style={styles.unpaidSubText}>
                               {student.parent} • {student.parentPhone}
                             </Text>
                           </View>
                         </View>
-                        <Text style={styles.unpaidInstructionText}>
-                          Tap the{" "}
-                          <Text style={{ fontWeight: "800", color: "#1A252C" }}>
-                            {student.amount} ✏️
-                          </Text>{" "}
-                          badge above to change this student's fee
-                        </Text>
+
+                        {/* Approve Button for Driver */}
+                        <TouchableOpacity
+                          style={styles.approveBtn}
+                          activeOpacity={0.8}
+                          onPress={() => markAsPaidInFirestore(student.id)}
+                        >
+                          <Text style={styles.approveBtnText}>
+                            ✓ Mark as Paid ({student.amount})
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                     )}
                   </View>
@@ -419,6 +487,12 @@ export default function FeesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FAF7F2",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FAF7F2",
   },
   scrollContent: {
@@ -650,6 +724,9 @@ const styles = StyleSheet.create({
   paidTagBg: {
     backgroundColor: "#E6F9F0",
   },
+  pendingTagBg: {
+    backgroundColor: "#FFF8ED",
+  },
   unpaidTagBg: {
     backgroundColor: "#FEE2E2",
   },
@@ -660,6 +737,9 @@ const styles = StyleSheet.create({
   },
   paidTagText: {
     color: "#10B981",
+  },
+  pendingTagText: {
+    color: "#F39C12",
   },
   unpaidTagText: {
     color: "#EF4444",
@@ -737,11 +817,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 2,
   },
-  unpaidInstructionText: {
-    fontSize: 11,
-    color: "#7F8C8D",
-    textAlign: "center",
-    marginTop: 4,
+  approveBtn: {
+    backgroundColor: "#2ECC71",
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  approveBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 13,
   },
   bottomTabBar: {
     position: "absolute",
