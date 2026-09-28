@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,6 +16,21 @@ export default function DriverProfileViewScreen() {
 
   const handleClose = () => {
     router.back();
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out from SafeRide Driver Panel?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: () => router.replace("/driver-login" as any),
+        },
+      ]
+    );
   };
 
   return (
@@ -90,7 +106,7 @@ export default function DriverProfileViewScreen() {
             </View>
             <View>
               <Text style={styles.infoLabel}>Phone</Text>
-              <Text style={styles.infoValue}>+94 812-3456-7890</Text>
+              <Text style={styles.infoValue}>+94 77-123-4567</Text>
             </View>
           </View>
 
@@ -142,6 +158,15 @@ export default function DriverProfileViewScreen() {
         {/* Emergency Report Button */}
         <TouchableOpacity style={styles.emergencyBtn} activeOpacity={0.8}>
           <Text style={styles.emergencyBtnText}>🚨 Report Emergency</Text>
+        </TouchableOpacity>
+
+        {/* Log Out Button */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          activeOpacity={0.8}
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutBtnText}>🚪 Log Out</Text>
         </TouchableOpacity>
 
         {/* Parent Reviews Section */}
@@ -400,6 +425,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     color: "#FFFFFF",
+  },
+  logoutBtn: {
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1.5,
+    borderColor: "#FF3B30",
+    marginHorizontal: 20,
+    marginTop: 12,
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutBtnText: {
+    color: "#FF3B30",
+    fontSize: 15,
+    fontWeight: "900",
   },
   reviewsHeaderTitle: {
     fontSize: 16,
