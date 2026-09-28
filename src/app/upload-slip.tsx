@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -10,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function UploadSlipScreen() {
   const router = useRouter();
@@ -17,18 +20,52 @@ export default function UploadSlipScreen() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const parentPhone = "94771234567"; // Current parent identification
+
   const handlePickFile = () => {
     setFileAttached(!fileAttached);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!fileAttached) return;
     setSubmitting(true);
-    setTimeout(() => {
+
+    try {
+      // Save payment slip submission details to Firestore
+      const paymentDocRef = doc(db, "payments", `${parentPhone}_2026_09`);
+      await setDoc(
+        paymentDocRef,
+        {
+          parentPhone,
+          parentName: "Fatima Rahman",
+          studentName: "Aisha Rahman",
+          grade: "4",
+          month: "SEPTEMBER 2026",
+          amount: 15000,
+          status: "PENDING_REVIEW",
+          method: "Bank Transfer",
+          uploadedAt: new Date().toISOString(),
+          note: note || "Payment slip submitted by parent",
+        },
+        { merge: true }
+      );
+
       setSubmitting(false);
-      // Navigate back to Parent Fees screen
-      router.push("/parent-fees" as any);
-    }, 1500);
+      Alert.alert(
+        "Submitted!",
+        "Payment slip submitted successfully for driver review.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/parent-fees" as any),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error submitting slip to Firestore:", error);
+      setSubmitting(false);
+      Alert.alert("Error", "Payment slip එක submit කිරීමට නොහැකි විය.");
+    }
   };
 
   return (
@@ -159,7 +196,7 @@ export default function UploadSlipScreen() {
         </TouchableOpacity>
 
         <Text style={styles.footerNoticeText}>
-          Verified by admin within 1 × 24 hours
+          Verified by driver within 1 × 24 hours
         </Text>
       </ScrollView>
     </SafeAreaView>
