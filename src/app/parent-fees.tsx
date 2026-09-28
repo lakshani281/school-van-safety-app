@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -9,10 +10,71 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 export default function ParentFeesScreen() {
   const router = useRouter();
   const [showSlipSuccess, setShowSlipSuccess] = useState(false);
+  const [currentDue, setCurrentDue] = useState<any>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Test parent phone number / ID
+  const parentPhone = "94771234567";
+
+  useEffect(() => {
+    // 1. Fetch Current Month Payment Status from Firestore
+    const unsubCurrentDue = onSnapshot(
+      doc(db, "payments", `${parentPhone}_2026_09`),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setCurrentDue(docSnap.data());
+          if (docSnap.data()?.status === "PENDING_REVIEW") {
+            setShowSlipSuccess(true);
+          }
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching payment due:", error);
+        setLoading(false);
+      }
+    );
+
+    // 2. Fetch Payment History from Firestore
+    const q = query(
+      collection(db, "payments"),
+      where("parentPhone", "==", parentPhone)
+    );
+    const unsubHistory = onSnapshot(
+      q,
+      (snapshot) => {
+        const historyList: any[] = [];
+        snapshot.forEach((docSnap) => {
+          historyList.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        setPaymentHistory(historyList);
+      },
+      (error) => console.error("Error fetching payment history:", error)
+    );
+
+    return () => {
+      unsubCurrentDue();
+      unsubHistory();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F39C12" />
+      </View>
+    );
+  }
+
+  const isPaid = currentDue?.status === "PAID";
+  const isPendingReview = currentDue?.status === "PENDING_REVIEW";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,14 +93,34 @@ export default function ParentFeesScreen() {
         {/* Current Due Payment Card */}
         <View style={styles.dueCard}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.monthLabel}>SEPTEMBER 2026</Text>
-            <View style={styles.unpaidBadge}>
-              <Text style={styles.unpaidBadgeText}>UNPAID</Text>
+            <Text style={styles.monthLabel}>
+              {currentDue?.month || "SEPTEMBER 2026"}
+            </Text>
+            <View
+              style={[
+                styles.unpaidBadge,
+                isPaid && styles.paidBadgeCard,
+                isPendingReview && styles.pendingBadgeCard,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.unpaidBadgeText,
+                  isPaid && styles.paidBadgeTextCard,
+                  isPendingReview && styles.pendingBadgeTextCard,
+                ]}
+              >
+                {isPaid ? "PAID" : isPendingReview ? "IN REVIEW" : "UNPAID"}
+              </Text>
             </View>
           </View>
 
-          <Text style={styles.amountText}>Rs. 15,000</Text>
-          <Text style={styles.dueDateText}>Due by 5 September 2026</Text>
+          <Text style={styles.amountText}>
+            Rs. {currentDue?.amount ? currentDue.amount.toLocaleString() : "15,000"}
+          </Text>
+          <Text style={styles.dueDateText}>
+            Due by {currentDue?.dueDate || "5 September 2026"}
+          </Text>
 
           {/* Children Fee Breakdown Row */}
           <View style={styles.childrenBreakdownRow}>
@@ -64,18 +146,32 @@ export default function ParentFeesScreen() {
           </View>
 
           {/* Action Button -> Navigates to /bank-transfer */}
-          <TouchableOpacity
-            style={styles.uploadSlipBtn}
-            activeOpacity={0.8}
-            onPress={() => router.push("/bank-transfer" as any)}
-          >
-            <Text style={styles.uploadBtnText}>🏦 Transfer & Upload Slip</Text>
-          </TouchableOpacity>
+          {!isPaid && (
+            <TouchableOpacity
+              style={styles.uploadSlipBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push("/bank-transfer" as any)}
+            >
+              <Text style={styles.uploadBtnText}>
+                {isPendingReview
+                  ? "📄 Re-upload Payment Slip"
+                  : "🏦 Transfer & Upload Slip"}
+              </Text>
+            </TouchableOpacity>
+          )}
 
-          {showSlipSuccess && (
+          {(showSlipSuccess || isPendingReview) && !isPaid && (
             <View style={styles.successNotice}>
               <Text style={styles.successNoticeText}>
                 ✓ Payment slip uploaded successfully for review!
+              </Text>
+            </View>
+          )}
+
+          {isPaid && (
+            <View style={styles.paidSuccessNotice}>
+              <Text style={styles.paidSuccessNoticeText}>
+                ✓ Payment verified and confirmed by driver!
               </Text>
             </View>
           )}
@@ -96,73 +192,72 @@ export default function ParentFeesScreen() {
         {/* Payment History Section */}
         <Text style={styles.sectionTitle}>Payment History</Text>
         <View style={styles.historyContainer}>
-          {/* August 2026 */}
-          <View style={styles.historyRow}>
-            <View style={styles.checkIconBox}>
-              <Text style={{ fontSize: 16 }}>✅</Text>
-            </View>
-            <View style={styles.historyDetails}>
-              <Text style={styles.historyMonth}>August 2026</Text>
-              <Text style={styles.historyMeta}>1 Aug 2026 • Bank Transfer</Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.historyAmount}>Rs. 15,000</Text>
-              <View style={styles.paidBadge}>
-                <Text style={styles.paidBadgeText}>Paid</Text>
+          {paymentHistory.length > 0 ? (
+            paymentHistory.map((item, index) => (
+              <View
+                key={item.id || index}
+                style={[
+                  styles.historyRow,
+                  index === paymentHistory.length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
+                <View style={styles.checkIconBox}>
+                  <Text style={{ fontSize: 16 }}>✅</Text>
+                </View>
+                <View style={styles.historyDetails}>
+                  <Text style={styles.historyMonth}>{item.month || "Month"}</Text>
+                  <Text style={styles.historyMeta}>
+                    {item.paidDate || "1 Aug 2026"} • {item.method || "Bank Transfer"}
+                  </Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.historyAmount}>
+                    Rs. {item.amount ? item.amount.toLocaleString() : "15,000"}
+                  </Text>
+                  <View style={styles.paidBadge}>
+                    <Text style={styles.paidBadgeText}>
+                      {item.status === "PAID" ? "Paid" : "Pending"}
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
+            ))
+          ) : (
+            <>
+              {/* Fallback Static History */}
+              <View style={styles.historyRow}>
+                <View style={styles.checkIconBox}>
+                  <Text style={{ fontSize: 16 }}>✅</Text>
+                </View>
+                <View style={styles.historyDetails}>
+                  <Text style={styles.historyMonth}>August 2026</Text>
+                  <Text style={styles.historyMeta}>1 Aug 2026 • Bank Transfer</Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.historyAmount}>Rs. 15,000</Text>
+                  <View style={styles.paidBadge}>
+                    <Text style={styles.paidBadgeText}>Paid</Text>
+                  </View>
+                </View>
+              </View>
 
-          {/* July 2026 */}
-          <View style={styles.historyRow}>
-            <View style={styles.checkIconBox}>
-              <Text style={{ fontSize: 16 }}>✅</Text>
-            </View>
-            <View style={styles.historyDetails}>
-              <Text style={styles.historyMonth}>July 2026</Text>
-              <Text style={styles.historyMeta}>2 Jul 2026 • Online Transfer</Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.historyAmount}>Rs. 15,000</Text>
-              <View style={styles.paidBadge}>
-                <Text style={styles.paidBadgeText}>Paid</Text>
+              <View style={[styles.historyRow, { borderBottomWidth: 0 }]}>
+                <View style={styles.checkIconBox}>
+                  <Text style={{ fontSize: 16 }}>✅</Text>
+                </View>
+                <View style={styles.historyDetails}>
+                  <Text style={styles.historyMonth}>July 2026</Text>
+                  <Text style={styles.historyMeta}>2 Jul 2026 • Online Transfer</Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.historyAmount}>Rs. 15,000</Text>
+                  <View style={styles.paidBadge}>
+                    <Text style={styles.paidBadgeText}>Paid</Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-
-          {/* June 2026 */}
-          <View style={styles.historyRow}>
-            <View style={styles.checkIconBox}>
-              <Text style={{ fontSize: 16 }}>✅</Text>
-            </View>
-            <View style={styles.historyDetails}>
-              <Text style={styles.historyMonth}>June 2026</Text>
-              <Text style={styles.historyMeta}>30 May 2026 • Cash</Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.historyAmount}>Rs. 15,000</Text>
-              <View style={styles.paidBadge}>
-                <Text style={styles.paidBadgeText}>Paid</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* May 2026 */}
-          <View style={[styles.historyRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.checkIconBox}>
-              <Text style={{ fontSize: 16 }}>✅</Text>
-            </View>
-            <View style={styles.historyDetails}>
-              <Text style={styles.historyMonth}>May 2026</Text>
-              <Text style={styles.historyMeta}>1 May 2026 • Bank Transfer</Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.historyAmount}>Rs. 15,000</Text>
-              <View style={styles.paidBadge}>
-                <Text style={styles.paidBadgeText}>Paid</Text>
-              </View>
-            </View>
-          </View>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -200,6 +295,12 @@ export default function ParentFeesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FAF7F2",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FAF7F2",
   },
   scrollContent: {
@@ -256,6 +357,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 0.5,
+  },
+  pendingBadgeCard: {
+    backgroundColor: "rgba(243, 156, 18, 0.2)",
+    borderColor: "#F39C12",
+  },
+  pendingBadgeTextCard: {
+    color: "#F39C12",
+  },
+  paidBadgeCard: {
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderColor: "#10B981",
+  },
+  paidBadgeTextCard: {
+    color: "#10B981",
   },
   amountText: {
     fontSize: 32,
@@ -318,13 +433,25 @@ const styles = StyleSheet.create({
     color: "#1A252C",
   },
   successNotice: {
-    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    backgroundColor: "rgba(243, 156, 18, 0.2)",
     borderRadius: 12,
     padding: 10,
     marginTop: 12,
     alignItems: "center",
   },
   successNoticeText: {
+    color: "#F39C12",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  paidSuccessNotice: {
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  paidSuccessNoticeText: {
     color: "#10B981",
     fontSize: 12,
     fontWeight: "800",
