@@ -14,16 +14,25 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
+
+// ඔයාගේ firebaseConfig.ts එක තියෙන්නේ src/firebaseConfig.ts නිසා correct import path එක:
+import { auth } from "../firebaseConfig"; 
 
 export default function ParentOtpScreen() {
   const router = useRouter();
-  // 6-digit OTP array for standard Firebase Auth
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
-  // Parent Login Screen එකෙන් පාස් වූ Phone Number එක ලබා ගැනීම
-  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
+  // Parent Login Screen එකෙන් පාස් වූ Parameters ලබා ගැනීම
+  const { phoneNumber, verificationId: initialVerificationId } =
+    useLocalSearchParams<{ phoneNumber: string; verificationId: string }>();
+
+  const [verificationId, setVerificationId] = useState<string>(
+    initialVerificationId || ""
+  );
 
   const isOtpComplete = otp.every((digit) => digit.trim().length === 1);
 
@@ -44,31 +53,66 @@ export default function ParentOtpScreen() {
     }
   };
 
+  // Firebase Real OTP Verification Logic
   const handleVerify = async () => {
     if (!isOtpComplete) return;
 
     const enteredOtp = otp.join("");
 
+    if (!verificationId) {
+      Alert.alert(
+        "Error",
+        "Verification ID එක හමු නොවීය. කරුණාකර පසුපසට ගොස් නැවත උත්සාහ කරන්න."
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // Simple Validation check (Standard Test OTP is 123456)
-      if (enteredOtp === "123456") {
-        setLoading(false);
-        Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
-        
-        // Navigation: /add-child screen එකට Phone Number එකත් සමඟ යැවීම
-        router.push({
-          pathname: "/add-child" as any,
-          params: { phoneNumber },
-        });
-      } else {
-        setLoading(false);
-        Alert.alert("OTP Error", "ඇතුළත් කළ OTP කේතය වැරදියි. (Try 1 2 3 4 5 6)");
-      }
+      // Firebase Auth Credentials සෑදීම
+      const credential = PhoneAuthProvider.credential(
+        verificationId,
+        enteredOtp
+      );
+
+      // Firebase Sign-In එක සාර්ථක කිරීම
+      await signInWithCredential(auth, credential);
+
+      setLoading(false);
+      Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
+
+      // Navigation: /add-child Screen එකට යෑම
+      router.push({
+        pathname: "/add-child" as any,
+        params: { phoneNumber },
+      });
     } catch (error: any) {
       setLoading(false);
-      Alert.alert("Error", "තහවුරු කිරීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.");
+      Alert.alert(
+        "OTP Error",
+        "ඇතුළත් කළ OTP කේතය වැරදියි හෝ කාලය ඉක්මවා ගොස් ඇත."
+      );
+    }
+  };
+
+  // OTP නැවත යැවීම (Resend OTP)
+  const handleResendOtp = async () => {
+    if (!phoneNumber) return;
+    try {
+      setResending(true);
+      const phoneProvider = new PhoneAuthProvider(auth);
+      const newVerificationId = await phoneProvider.verifyPhoneNumber(
+        phoneNumber,
+        // @ts-ignore
+        undefined
+      );
+      setVerificationId(newVerificationId);
+      setResending(false);
+      Alert.alert("Success", "නව OTP කේතය ඔබගේ දුරකථනයට යවන ලදී.");
+    } catch (error: any) {
+      setResending(false);
+      Alert.alert("Error", "OTP යැවීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.");
     }
   };
 
@@ -104,7 +148,6 @@ export default function ParentOtpScreen() {
                 {phoneNumber || "+94 77 123 4567"}
               </Text>
             </Text>
-            <Text style={styles.hintText}>Hint: try 1 2 3 4 5 6</Text>
 
             {/* 6-Digit OTP Input Boxes */}
             <View style={styles.otpInputRow}>
@@ -152,6 +195,17 @@ export default function ParentOtpScreen() {
                   Verify & Continue ✓
                 </Text>
               )}
+            </TouchableOpacity>
+
+            {/* Resend Code Button */}
+            <TouchableOpacity
+              onPress={handleResendOtp}
+              disabled={resending}
+              style={styles.resendBtn}
+            >
+              <Text style={styles.resendText}>
+                {resending ? "Sending..." : "Didn't receive code? Resend"}
+              </Text>
             </TouchableOpacity>
 
             {/* Change Number Button */}
@@ -221,17 +275,11 @@ const styles = StyleSheet.create({
     color: "#7F8C8D",
     fontWeight: "500",
     textAlign: "center",
+    marginBottom: 28,
   },
   phoneNumberBold: {
     color: "#1A252C",
     fontWeight: "800",
-  },
-  hintText: {
-    fontSize: 13,
-    color: "#F39C12",
-    fontWeight: "800",
-    marginTop: 6,
-    marginBottom: 28,
   },
   otpInputRow: {
     flexDirection: "row",
@@ -267,7 +315,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 16,
     elevation: 2,
   },
   verifyBtnDisabled: {
@@ -286,8 +334,17 @@ const styles = StyleSheet.create({
   verifyBtnTextActive: {
     color: "#1A252C",
   },
+  resendBtn: {
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  resendText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#F39C12",
+  },
   changeNumberBtn: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 16,
   },
   changeNumberText: {
