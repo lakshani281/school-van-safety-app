@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,16 +11,26 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
+
+// ඔයාගේ firebaseConfig.ts එක තියෙන්නේ src/firebaseConfig.ts නිසා correct import path එක:
+import { auth } from "../firebaseConfig";
 
 export default function OtpScreen() {
   // 6-digit OTP array
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const inputs = useRef<Array<TextInput | null>>([]);
   const router = useRouter();
 
-  // Login Screen එකෙන් පාස් වුණු Phone Number එක ලබා ගැනීම
-  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
+  // Driver Login Screen එකෙන් පාස් වුණු Parameters ලබා ගැනීම
+  const { phoneNumber, verificationId: initialVerificationId } =
+    useLocalSearchParams<{ phoneNumber: string; verificationId: string }>();
+
+  const [verificationId, setVerificationId] = useState<string>(
+    initialVerificationId || ""
+  );
 
   const handleChangeText = (text: string, index: number) => {
     const newOtp = [...otp];
@@ -42,26 +52,61 @@ export default function OtpScreen() {
 
   const isOtpComplete = otp.every((digit) => digit !== "");
 
+  // Firebase Real OTP Verification Logic
   const handleVerify = async () => {
     if (!isOtpComplete) return;
 
     const enteredOtp = otp.join("");
 
+    if (!verificationId) {
+      Alert.alert(
+        "Error",
+        "Verification ID එක හමු නොවීය. කරුණාකර පසුපසට ගොස් නැවත උත්සාහ කරන්න."
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // Simple Validation check (Standard Test OTP is 123456)
-      if (enteredOtp === "123456") {
-        setLoading(false);
-        Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
-        router.push("/driver-setup" as any);
-      } else {
-        setLoading(false);
-        Alert.alert("OTP Error", "ඇතුළත් කළ OTP කේතය වැරදියි. (Try 123456)");
-      }
+      // Firebase Credentials නිර්මාණය කිරීම
+      const credential = PhoneAuthProvider.credential(
+        verificationId,
+        enteredOtp
+      );
+
+      // Firebase Sign-In එක සාර්ථක කිරීම
+      await signInWithCredential(auth, credential);
+
+      setLoading(false);
+      Alert.alert("Success", "ගිණුම සාර්ථකව තහවුරු විය!");
+      router.push("/driver-setup" as any);
     } catch (error: any) {
       setLoading(false);
-      Alert.alert("Error", "තහවුරු කිරීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.");
+      Alert.alert(
+        "OTP Error",
+        "ඇතුළත් කළ OTP කේතය වැරදියි හෝ කාලය ඉක්මවා ගොස් ඇත."
+      );
+    }
+  };
+
+  // OTP නැවත යැවීම (Resend OTP)
+  const handleResendOtp = async () => {
+    if (!phoneNumber) return;
+    try {
+      setResending(true);
+      const phoneProvider = new PhoneAuthProvider(auth);
+      const newVerificationId = await phoneProvider.verifyPhoneNumber(
+        phoneNumber,
+        // @ts-ignore
+        undefined
+      );
+      setVerificationId(newVerificationId);
+      setResending(false);
+      Alert.alert("Success", "නව OTP කේතය ඔබගේ දුරකථනයට යවන ලදී.");
+    } catch (error: any) {
+      setResending(false);
+      Alert.alert("Error", "OTP යැවීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.");
     }
   };
 
@@ -87,7 +132,6 @@ export default function OtpScreen() {
             {phoneNumber || "+94 77 123 4567"}
           </Text>
         </Text>
-        <Text style={styles.hintText}>Hint: try 1 2 3 4 5 6</Text>
 
         {/* 6-Digit Input Boxes */}
         <View style={styles.otpContainer}>
@@ -125,6 +169,17 @@ export default function OtpScreen() {
           ) : (
             <Text style={styles.buttonText}>Verify & Continue ✓</Text>
           )}
+        </TouchableOpacity>
+
+        {/* Resend Code Link */}
+        <TouchableOpacity
+          onPress={handleResendOtp}
+          disabled={resending}
+          style={styles.resendBtn}
+        >
+          <Text style={styles.resendText}>
+            {resending ? "Sending..." : "Didn't receive code? Resend"}
+          </Text>
         </TouchableOpacity>
 
         {/* Change Number Link */}
@@ -178,17 +233,11 @@ const styles = StyleSheet.create({
   sentText: {
     fontSize: 14,
     color: "#7F8C8D",
-    marginBottom: 4,
+    marginBottom: 25,
   },
   phoneBold: {
     fontWeight: "bold",
     color: "#1A252C",
-  },
-  hintText: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#F39C12",
-    marginBottom: 25,
   },
   otpContainer: {
     flexDirection: "row",
@@ -214,13 +263,22 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 20,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
     elevation: 2,
   },
   buttonText: {
     fontSize: 17,
     fontWeight: "bold",
     color: "#1A252C",
+  },
+  resendBtn: {
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  resendText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#F39C12",
   },
   changeNumberBtn: {
     padding: 10,
